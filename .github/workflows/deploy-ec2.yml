@@ -1,0 +1,26 @@
+name: Deploy na EC2
+
+on:
+  workflow_run:
+    workflows: [Publicar imagens no Docker Hub]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar e iniciar container do frontend
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOCKERHUB_USERNAME
+          script: |
+            sudo docker pull "$DOCKERHUB_USERNAME/front-end-pi:latest"
+            sudo docker rm -f front-end-pi 2>/dev/null || true
+            sudo docker run -d --name front-end-pi --restart unless-stopped -p 80:80 "$DOCKERHUB_USERNAME/front-end-pi:latest"
