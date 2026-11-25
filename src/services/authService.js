@@ -15,6 +15,7 @@ export function login(usuario, senha) {
       if (usuario === USUARIO_TESTE.usuario && senha === USUARIO_TESTE.senha) {
         const tokenFake = 'mock-token-' + Date.now();
         localStorage.setItem('token', tokenFake);
+        localStorage.setItem('usuarioNome', USUARIO_TESTE.nome);
         resolve({ token: tokenFake, nome: USUARIO_TESTE.nome });
       } else {
         reject(new Error('Usuário ou senha inválidos.'));
@@ -25,6 +26,16 @@ export function login(usuario, senha) {
 
 export function logout() {
   localStorage.removeItem('token');
+  localStorage.removeItem('usuarioNome');
+}
+
+/** Nome do operador logado (enviado junto com as liberações manuais de catraca). */
+export function nomeDoUsuario() {
+  try {
+    return localStorage.getItem('usuarioNome') || 'Operador';
+  } catch {
+    return 'Operador';
+  }
 }
 
 export function estaAutenticado() {

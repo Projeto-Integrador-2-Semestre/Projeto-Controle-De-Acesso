@@ -1,9 +1,29 @@
-import { pessoasMock } from './PessoasMock';
+import api, { USE_MOCK } from './api.js';
+import { pessoasMock } from './PessoasMock.js';
+import { formatarCpf, somenteDigitos } from './formatadores.js';
 
-// Troque para false (ou use VITE_USE_MOCK no .env) quando a API Java estiver disponível.
-const USE_MOCK = true;
+// O que a API Java ainda não oferece (a tela desabilita o recurso quando estiver usando a API).
+export const RECURSOS_PESSOAS = {
+  bloqueio: USE_MOCK, // a tabela `pessoa` não tem coluna de status
+  dataCadastro: USE_MOCK, // a tabela `pessoa` não guarda a data do cadastro
+};
 
 let _pessoas = [...pessoasMock];
+
+/** Converte a pessoa da API ({cpf, nome, possuiFoto}) para o formato usado pela tela. */
+function paraPessoaDaTela(p) {
+  return {
+    id: p.cpf,
+    nome: p.nome ?? '',
+    cpf: formatarCpf(p.cpf),
+    metodoAcesso: 'Biometria Facial',
+    possuiFoto: p.possuiFoto ?? Boolean(p.foto),
+    status: 'liberado',
+    motivoBloqueio: null,
+    dataCadastro: null,
+    horaCadastro: null,
+  };
+}
 
 export function getPessoas() {
   if (USE_MOCK) {
@@ -11,7 +31,7 @@ export function getPessoas() {
       setTimeout(() => resolve([..._pessoas]), 300);
     });
   }
-  // return api.get('/pessoas').then((res) => res.data);
+  return api.get('/pessoa/listar', { params: { foto: false } }).then((res) => res.data.map(paraPessoaDaTela));
 }
 
 export function cadastrarPessoa(formData) {
@@ -41,10 +61,12 @@ export function cadastrarPessoa(formData) {
     });
   }
 
-  // Quando a API Java estiver pronta, troque por uma chamada multipart real, por exemplo:
-  // return api.post('/pessoas', formData, {
-  //   headers: { 'Content-Type': 'multipart/form-data' },
-  // }).then((res) => res.data);
+  // O banco guarda o CPF só com dígitos (a face_api usa esse valor nos logs de acesso).
+  const dados = new FormData();
+  dados.append('nome', formData.get('nome'));
+  dados.append('cpf', somenteDigitos(formData.get('cpf')));
+  dados.append('foto', formData.get('foto'));
+  return api.post('/pessoa/cadastro', dados).then((res) => res.data);
 }
 
 export function alterarStatusAcesso(id, novoStatus) {
@@ -60,5 +82,6 @@ export function alterarStatusAcesso(id, novoStatus) {
       }, 250);
     });
   }
-  // return api.patch(`/pessoas/${id}/status`, { status: novoStatus }).then((res) => res.data);
+  // Ainda não existe na API Java (precisa de uma coluna de status em `pessoa` e da face_api respeitar o bloqueio).
+  return Promise.reject(new Error('Bloqueio de acesso ainda não está disponível na API.'));
 }

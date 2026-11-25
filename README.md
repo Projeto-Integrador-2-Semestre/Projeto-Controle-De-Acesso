@@ -13,7 +13,7 @@ O sistema foi desenvolvido como uma Single Page Application (SPA) para proporcio
 
 > [!IMPORTANT]
 > **Arquitetura Front-End / Back-End:**
-> A aplicação está preparada para integração com uma API Back-End em Java. Atualmente, os dados de pessoas, logs e dispositivos e a autenticação são simulados localmente; as chamadas HTTP dos serviços ainda precisam ser habilitadas quando a API estiver disponível.
+> A aplicação consome a API Back-End em Java (pessoas, logs e catracas). Login e monitoramento de dispositivos ainda são simulados localmente — veja a tabela em *Integração com o Back-End em Java*.
 
 ---
 
@@ -66,26 +66,30 @@ O sistema foi desenvolvido como uma Single Page Application (SPA) para proporcio
 
 ---
 
-## 🔌 Integração planejada com o Back-End em Java
+## 🔌 Integração com o Back-End em Java
 
-A configuração do cliente Axios está em `src/services/api.js`, mas os serviços ainda usam mocks e as chamadas HTTP estão comentadas. O login de demonstração aceita `admin` / `1234`; não use essas credenciais em produção.
+Os serviços em `src/services/` chamam a API Java (Spring Boot, repositório `ApiControleDeAcessoPI2`) via Axios (`src/services/api.js`).
+Sem `VITE_API_URL` configurada (ou com `VITE_USE_MOCK=true`) eles voltam a usar os dados simulados, para desenvolver a interface sem o Back-End.
 
-Os endpoints previstos para a integração são:
-| Recurso | Método HTTP | Descrição |
-| :--- | :---: | :--- |
-| `/auth/login` | `POST` | Autenticação e obtenção do token de acesso |
-| `/pessoas` | `GET` | Listagem de pessoas cadastradas |
-| `/pessoas` | `POST` | Cadastro de pessoa com dados e foto biométrica (multipart/form-data) |
-| `/pessoas/{id}/status` | `PATCH` | Alteração de status (liberar/bloquear acesso) |
-| `/logs-acesso` | `GET` | Consulta ao histórico e registros de auditoria de acessos |
-| `/dispositivos/estacoes` | `GET` | Listagem e telemetria de catracas e terminais de reconhecimento |
-| `/dispositivos/{id}/ping` | `POST` | Teste de conectividade com a catraca/estação |
-| `/dispositivos/{id}/sincronizar-facial` | `POST` | Força sincronismo das faces cadastradas com o dispositivo |
-| `/dispositivos/{id}/testar-giro` | `POST` | Acionamento de teste de giro do mecanismo da catraca |
-| `/dispositivos/bloqueio-geral` | `POST` | Bloqueio emergencial de todos os pontos de acesso |
+| Tela / recurso | Endpoint da API Java | Situação |
+| :--- | :--- | :---: |
+| Listagem de pessoas | `GET /pessoa/listar?foto=false` | ✅ integrado |
+| Cadastro de pessoa (multipart: `nome`, `cpf`, `foto`) | `POST /pessoa/cadastro` (409 se o CPF já existir) | ✅ integrado |
+| Logs de entrada/saída e Painel de Análise | `GET /logs?de=&ate=&tipo=&cpf=&limite=` | ✅ integrado |
+| Lista de catracas do botão "Liberar Catraca" | `GET /catracas` | ✅ integrado |
+| Liberação manual de catraca | `POST /catracas/{id}/liberar` → acompanha `GET /catracas/liberacoes/{id}` | ✅ integrado |
+| Histórico de liberações manuais (Painel) | `GET /catracas/liberacoes` | ✅ integrado |
+| Login | — | ⏳ ainda simulado (`admin` / `1234`) |
+| Bloquear/liberar acesso de uma pessoa | — | ⏳ não existe na API (botão desabilitado) |
+| Data do cadastro da pessoa | — | ⏳ a tabela `pessoa` não guarda |
+| Monitoramento de dispositivos (ping, sincronizar, teste de giro, reiniciar, bloqueio geral) | — | ⏳ ainda simulado |
+| Catraca em que a passagem aconteceu (coluna "Ponto de Acesso") | — | ⏳ o totem não envia essa informação |
 
-> **Nota para Desenvolvimento:**
-> As camadas em `src/services/` usam dados simulados (*mocks*) para permitir o desenvolvimento da interface sem o Back-End. A URL configurada em `VITE_API_URL` só será utilizada quando as chamadas reais forem ativadas.
+### Liberação manual de catraca
+
+1. O operador clica em **Liberar Catraca** (barra superior), escolhe a catraca e, se quiser, informa o motivo.
+2. A API guarda o pedido por 30 s. O tablet (app `face_totem`) configurado com o ID dessa catraca consulta a API a cada ~1,5 s e mostra **ACESSO LIBERADO**.
+3. O painel acompanha o pedido e avisa quando o tablet confirmou (ou se ele não respondeu a tempo).
 
 ---
 
@@ -112,7 +116,7 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
    npm install
    ```
 
-3. **Configure as Variáveis de Ambiente (opcional enquanto os mocks estiverem ativos):**
+3. **Configure as Variáveis de Ambiente (sem `VITE_API_URL` a aplicação usa os dados simulados):**
    Copie `.env.example` para `.env` na raiz do projeto e ajuste a URL base da API:
    ```env
    VITE_API_URL=http://localhost:8080
@@ -152,7 +156,7 @@ front-end-pi/
 │   │   ├── EsqueciSenha/   # Recuperação de acesso
 │   │   ├── GestaoPessoas/  # Listagem e controle de status de usuários
 │   │   ├── CadastroPessoa/ # Formulário com captura e validação facial (MediaPipe)
-│   │   ├── Logs/           # Histórico e auditoria de passagens
+│   │   ├── Logs/           # Histórico de passagens e Painel de Análise (gráficos)
 │   │   └── Monitoramento/  # Telemetria e controle de catracas em tempo real
 │   ├── services/           # Configuração do Axios (api.js), chamadas HTTP e Mocks
 │   ├── App.jsx             # Definição e proteção de rotas

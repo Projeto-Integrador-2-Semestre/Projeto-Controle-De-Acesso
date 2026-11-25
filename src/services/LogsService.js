@@ -1,13 +1,53 @@
+import api, { USE_MOCK } from './api.js';
 import { logsMock } from './LogsMock.js';
+import { dataHoraLocal, mascararCpf } from './formatadores.js';
 
-// Troque para false (ou use VITE_USE_MOCK no .env) quando a API Java estiver disponível.
-const USE_MOCK = true;
+const LIMITE_REGISTROS = 5000;
 
-export function getLogs() {
+/**
+ * Converte o log da API ({id, cpf, nome, tipo, dataHora em UTC}) para o formato das telas.
+ * `dataHora` vira texto local ("YYYY-MM-DDTHH:mm:ss") e `instante` guarda a data real.
+ */
+function paraLogDaTela(log) {
+  return {
+    id: log.id,
+    instante: new Date(log.dataHora),
+    dataHora: dataHoraLocal(log.dataHora),
+    sentido: log.tipo,
+    nome: log.nome ?? 'Pessoa removida',
+    cpf: mascararCpf(log.cpf),
+    cpfCompleto: log.cpf,
+    // O totem ainda não informa à face_api qual catraca registrou a passagem
+    catraca: 'Totem de Reconhecimento Facial',
+    local: 'Registro automático (face_api)',
+    metodo: 'Facial',
+    status: 'liberado', // só passagens autorizadas são gravadas
+  };
+}
+
+function mockParaTela(log) {
+  return { ...log, instante: new Date(log.dataHora), dataHora: dataHoraLocal(log.dataHora), cpfCompleto: log.cpf };
+}
+
+/**
+ * Busca os logs de entrada/saída. `de` e `ate` (Date) limitam o período no servidor.
+ */
+export function getLogs({ de, ate } = {}) {
   if (USE_MOCK) {
     return new Promise((resolve) => {
-      setTimeout(() => resolve([...logsMock]), 300);
+      setTimeout(() => {
+        const dados = logsMock.map(mockParaTela).filter((l) => (!de || l.instante >= de) && (!ate || l.instante <= ate));
+        resolve(dados);
+      }, 300);
     });
   }
-  // return api.get('/logs-acesso').then((res) => res.data);
+  return api
+    .get('/logs', {
+      params: {
+        de: de ? de.toISOString() : undefined,
+        ate: ate ? ate.toISOString() : undefined,
+        limite: LIMITE_REGISTROS,
+      },
+    })
+    .then((res) => res.data.map(paraLogDaTela));
 }

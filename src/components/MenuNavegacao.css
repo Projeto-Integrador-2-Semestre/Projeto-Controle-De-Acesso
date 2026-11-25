@@ -236,6 +236,8 @@
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
+  max-height: 46vh;
+  overflow-y: auto;
 }
 
 .modal__item {
@@ -300,6 +302,8 @@
   position: fixed;
   right: 24px;
   bottom: 24px;
+  max-width: min(440px, calc(100vw - 32px));
+  line-height: 1.4;
   z-index: 120;
   display: flex;
   align-items: center;
@@ -358,6 +362,89 @@
 .modal__confirmar {
   background: #e53e3e;
   color: #fff;
+}
+
+.modal__info {
+  color: #64748b;
+  font-size: 14px;
+  padding: 8px 2px;
+}
+
+.modal__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.modal__campo input {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1f2937;
+}
+
+.modal__campo input:focus {
+  outline: 2px solid #fecaca;
+  border-color: #e53e3e;
+}
+
+.modal__erro {
+  margin: -4px 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.menu-toast--aguardando {
+  background: linear-gradient(135deg, #1e293b, #475569);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
+}
+
+.menu-toast--aguardando .menu-toast__ponto {
+  background: #fde68a;
+  box-shadow: 0 0 10px rgba(253, 230, 138, 0.9);
+  animation: menuToastPulso 1s ease-in-out infinite alternate;
+}
+
+.menu-toast--erro {
+  background: linear-gradient(135deg, #7f1d1d, #dc2626);
+  box-shadow: 0 16px 36px rgba(220, 38, 38, 0.25);
+}
+
+.menu-toast--erro .menu-toast__ponto {
+  background: #fee2e2;
+}
+
+.menu-toast__fechar {
+  margin-left: 4px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+@keyframes menuToastPulso {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal__confirmar:disabled {
