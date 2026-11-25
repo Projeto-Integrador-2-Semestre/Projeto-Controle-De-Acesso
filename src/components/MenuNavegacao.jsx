@@ -11,63 +11,116 @@ import {
   GraduationCap,
   Menu,
   X,
-
+  BarChart3,
 } from 'lucide-react';
-import { estacoesMock } from '../services/EstacoesMock.js';
+import { getCatracas, getLiberacao, liberarCatraca } from '../services/CatracasService.js';
+import { mensagemDeErro } from '../services/api.js';
+import { nomeDoUsuario } from '../services/authService.js';
 import './MenuNavegacao.css';
+import logoSenai from '../assets/logo_senai.png';
+
+// Quanto tempo o painel acompanha a liberação esperando o tablet confirmar
+const ACOMPANHAMENTO_MS = 35000;
+const INTERVALO_CONSULTA_MS = 1000;
 
 function MenuNavegacao({ children }) {
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
-  const [catracaSelecionada, setCatracaSelecionada] = useState('');
-  const [toast, setToast] = useState({ visivel: false, mensagem: '' });
+  const [catracas, setCatracas] = useState([]);
+  const [carregandoCatracas, setCarregandoCatracas] = useState(false);
+  const [erroModal, setErroModal] = useState('');
+  const [catracaSelecionada, setCatracaSelecionada] = useState(null);
+  const [motivo, setMotivo] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [toast, setToast] = useState({ visivel: false, mensagem: '', tipo: 'sucesso' });
   const toastTimerRef = useRef(null);
+  const acompanhamentoRef = useRef(null);
 
   useEffect(() => {
     return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
+      clearTimeout(toastTimerRef.current);
+      clearInterval(acompanhamentoRef.current);
     };
   }, []);
 
-  const catracasDisponiveis = estacoesMock.map((estacao) => ({
-    id: estacao.id,
-    nome: estacao.catraca.nome,
-    local: estacao.nome,
-  }));
-
   const isActive = (path) => location.pathname === path;
+  const usuario = nomeDoUsuario();
 
   function irPara() {
     // fecha a sidebar ao navegar (relevante no mobile)
     setMenuAberto(false);
   }
 
-  function abrirModalLiberacao() {
-    setCatracaSelecionada(catracasDisponiveis[0]?.nome ?? '');
-    setModalAberto(true);
+  function mostrarToast(mensagem, tipo, duracaoMs) {
+    clearTimeout(toastTimerRef.current);
+    setToast({ visivel: true, mensagem, tipo });
+    if (duracaoMs) {
+      toastTimerRef.current = setTimeout(() => setToast((prev) => ({ ...prev, visivel: false })), duracaoMs);
+    }
   }
 
-  function confirmarLiberacao() {
-    if (!catracaSelecionada) return;
-
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
+  async function abrirModalLiberacao() {
+    setModalAberto(true);
+    setErroModal('');
+    setMotivo('');
+    setCarregandoCatracas(true);
+    try {
+      const lista = await getCatracas();
+      setCatracas(lista);
+      setCatracaSelecionada((atual) => lista.find((c) => c.id === atual?.id) ?? lista[0] ?? null);
+    } catch (error) {
+      setErroModal(mensagemDeErro(error, 'Não foi possível carregar as catracas.'));
+    } finally {
+      setCarregandoCatracas(false);
     }
+  }
 
-    setToast({
-      visivel: true,
-      mensagem: `Acesso liberado para ${catracaSelecionada}.`,
-    });
+  /** Consulta a API até o tablet da catraca confirmar (ou o pedido expirar). */
+  function acompanharLiberacao(liberacao, nomeCatraca) {
+    clearInterval(acompanhamentoRef.current);
+    const limite = Date.now() + ACOMPANHAMENTO_MS;
 
-    setModalAberto(false);
-    setCatracaSelecionada('');
+    acompanhamentoRef.current = setInterval(async () => {
+      try {
+        const atual = await getLiberacao(liberacao.id);
+        if (atual?.status === 'confirmada') {
+          clearInterval(acompanhamentoRef.current);
+          mostrarToast(`${nomeCatraca} liberada — o tablet exibiu "Acesso liberado".`, 'sucesso', 5000);
+          return;
+        }
+        if (atual?.status === 'expirada' || Date.now() > limite) {
+          clearInterval(acompanhamentoRef.current);
+          mostrarToast(
+            `O tablet da ${nomeCatraca} não respondeu. Verifique se ele está ligado e configurado com esta catraca.`,
+            'erro',
+            7000
+          );
+        }
+      } catch {
+        // falha pontual de rede: tenta de novo no próximo intervalo
+      }
+    }, INTERVALO_CONSULTA_MS);
+  }
 
-    toastTimerRef.current = setTimeout(() => {
-      setToast((prev) => ({ ...prev, visivel: false }));
-    }, 3000);
+  async function confirmarLiberacao() {
+    if (!catracaSelecionada || enviando) return;
+
+    setEnviando(true);
+    setErroModal('');
+    try {
+      const liberacao = await liberarCatraca(catracaSelecionada.id, {
+        operador: usuario,
+        motivo: motivo.trim() || undefined,
+      });
+      setModalAberto(false);
+      mostrarToast(`Liberação enviada para ${catracaSelecionada.nome}. Aguardando o tablet...`, 'aguardando');
+      acompanharLiberacao(liberacao, catracaSelecionada.nome);
+    } catch (error) {
+      setErroModal(mensagemDeErro(error, 'Não foi possível liberar a catraca.'));
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -86,7 +139,7 @@ function MenuNavegacao({ children }) {
           </button>
 
           <div className="topbar__marca">
-            <img src="../src/assets/logo_senai.png" alt="Logo SENAI" className="topbar__logo" />
+            <img src={logoSenai} alt="Logo SENAI" className="topbar__logo" />
             <div className="topbar__titulo">
               <h1>Controle de Acesso</h1>
               <span>Portaria Segura • Sorocaba</span>
@@ -106,7 +159,7 @@ function MenuNavegacao({ children }) {
             <span>Liberar Catraca</span>
           </button>
           <div className="topbar__perfil">
-            <strong>Usuário</strong>
+            <strong>{usuario}</strong>
             <span>
               Operador de Portaria • <span className="destaque">SENAI SP</span>
             </span>
@@ -146,32 +199,65 @@ function MenuNavegacao({ children }) {
               </div>
 
               <p className="modal__descricao">
-                Selecione a catraca que será liberada manualmente para passagem autorizada.
+                Selecione a catraca que será liberada manualmente. O tablet dela exibirá
+                <strong> &quot;Acesso liberado&quot;</strong> em poucos segundos.
               </p>
 
               <div className="modal__lista">
-                {catracasDisponiveis.map((catraca) => (
-                  <button
-                    key={catraca.id}
-                    type="button"
-                    className={`modal__item ${catracaSelecionada === catraca.nome ? 'modal__item--ativo' : ''}`}
-                    onClick={() => setCatracaSelecionada(catraca.nome)}
-                  >
-                    <div className="modal__item-texto">
-                      <strong>{catraca.nome}</strong>
-                      <span>{catraca.local}</span>
-                    </div>
-                    {catracaSelecionada === catraca.nome && <span className="modal__check">✓</span>}
-                  </button>
-                ))}
+                {carregandoCatracas && <p className="modal__info">Carregando catracas...</p>}
+
+                {!carregandoCatracas && !erroModal && catracas.length === 0 && (
+                  <p className="modal__info">Nenhuma catraca cadastrada.</p>
+                )}
+
+                {catracas.map((catraca) => {
+                  const ativa = catracaSelecionada?.id === catraca.id;
+                  return (
+                    <button
+                      key={catraca.id}
+                      type="button"
+                      className={`modal__item ${ativa ? 'modal__item--ativo' : ''}`}
+                      onClick={() => setCatracaSelecionada(catraca)}
+                      aria-pressed={ativa}
+                    >
+                      <div className="modal__item-texto">
+                        <strong>{catraca.nome}</strong>
+                        <span>{catraca.local}</span>
+                      </div>
+                      {ativa && <span className="modal__check">✓</span>}
+                    </button>
+                  );
+                })}
               </div>
+
+              <label className="modal__campo">
+                <span>Motivo (opcional)</span>
+                <input
+                  type="text"
+                  maxLength={120}
+                  placeholder="Ex: visitante autorizado pela coordenação"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                />
+              </label>
+
+              {erroModal && (
+                <p className="modal__erro" role="alert">
+                  {erroModal}
+                </p>
+              )}
 
               <div className="modal__acoes">
                 <button type="button" className="modal__cancelar" onClick={() => setModalAberto(false)}>
                   Cancelar
                 </button>
-                <button type="button" className="modal__confirmar" onClick={confirmarLiberacao} disabled={!catracaSelecionada}>
-                  Liberar acesso
+                <button
+                  type="button"
+                  className="modal__confirmar"
+                  onClick={confirmarLiberacao}
+                  disabled={!catracaSelecionada || enviando}
+                >
+                  {enviando ? 'Liberando...' : 'Liberar acesso'}
                 </button>
               </div>
             </div>
@@ -179,9 +265,19 @@ function MenuNavegacao({ children }) {
         )}
 
         {toast.visivel && (
-          <div className="menu-toast menu-toast--visivel" role="status" aria-live="polite">
+          <div className={`menu-toast menu-toast--visivel menu-toast--${toast.tipo}`} role="status" aria-live="polite">
             <span className="menu-toast__ponto" />
             {toast.mensagem}
+            {toast.tipo !== 'aguardando' && (
+              <button
+                type="button"
+                className="menu-toast__fechar"
+                onClick={() => setToast((prev) => ({ ...prev, visivel: false }))}
+                aria-label="Fechar aviso"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         )}
 
@@ -213,6 +309,15 @@ function MenuNavegacao({ children }) {
             >
               <Clock size={18} />
               Logs de Entrada/Saída
+            </Link>
+
+            <Link
+              to="/logs/painel"
+              onClick={irPara}
+              className={`sidebar__link ${isActive('/logs/painel') ? 'sidebar__link--ativo' : ''}`}
+            >
+              <BarChart3 size={18} />
+              Análise de Acessos
             </Link>
 
             <Link
