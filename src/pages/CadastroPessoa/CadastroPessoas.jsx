@@ -15,6 +15,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { cadastrarPessoa } from '../../services/PessoasService';
+import { mensagemDeErro } from '../../services/api.js';
 import '../CadastroPessoa/CadastroPessoas.css';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/jpg'];
@@ -368,7 +369,7 @@ function CadastroPessoas() {
       setTimeout(() => navigate('/gestao'), 1400);
     } catch (error) {
       console.error(error);
-      setErroGeral('Não foi possível salvar o cadastro. Tente novamente.');
+      setErroGeral(mensagemDeErro(error, 'Não foi possível salvar o cadastro. Tente novamente.'));
     } finally {
       setEnviando(false);
     }

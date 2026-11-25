@@ -450,3 +450,7 @@
     align-items: flex-start;
   }
 }
+.icone-acao:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

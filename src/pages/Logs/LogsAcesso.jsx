@@ -16,6 +16,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { getLogs } from '../../services/LogsService.js';
+import { mensagemDeErro } from '../../services/api.js';
+import { dataLocalISO, fimDoDia, inicioDoDia } from '../../services/formatadores.js';
 import './LogsAcesso.css';
 
 const ITENS_POR_PAGINA = 6;
@@ -31,14 +33,10 @@ function corAvatar(nome) {
   return CORES_AVATAR[soma % CORES_AVATAR.length];
 }
 
-function dataISOParaCampo(data) {
-  return data.toISOString().slice(0, 10);
-}
+// Data no fuso local (toISOString() usaria UTC e trocaria o dia depois das 21h no Brasil)
+const dataISOParaCampo = dataLocalISO;
 
 function LogsAcesso() {
-  const [logs, setLogs] = useState([]);
-  const [carregando, setCarregando] = useState(true);
-  const [atualizadoAs, setAtualizadoAs] = useState('');
 
   const hoje = new Date();
   const hojeInicial = dataISOParaCampo(hoje);
@@ -50,18 +48,6 @@ function LogsAcesso() {
   const [horaFim, setHoraFim] = useState('23:59');
   const [busca, setBusca] = useState('');
   const [pagina, setPagina] = useState(1);
-
-  function carregarLogs() {
-    setCarregando(true);
-    getLogs().then((dados) => {
-      setLogs(dados);
-      setCarregando(false);
-      const agora = new Date();
-      setAtualizadoAs(
-        `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`
-      );
-    });
-  }
 
   function aplicarAtalho(atalho) {
     const hojeAtual = new Date();
@@ -82,14 +68,38 @@ function LogsAcesso() {
     setPagina(1);
   }
 
-  useEffect(() => {
-    const carregarDadosIniciais = async () => {
-      aplicarAtalho('hoje');
-      carregarLogs();
-    };
+  // O período das datas é filtrado na API; hora e busca continuam filtradas aqui na tela.
+  // `resultado.chave` diz para qual período os logs foram carregados (diferente = carregando).
+  const [recarga, setRecarga] = useState(0);
+  const [resultado, setResultado] = useState({ chave: null, logs: [], erro: '', atualizadoAs: '' });
+  const periodoValido = Boolean(dataInicio && dataFim && dataInicio <= dataFim);
+  const chave = `${dataInicio}|${dataFim}|${recarga}`;
+  const carregando = periodoValido && resultado.chave !== chave;
+  const { logs, erro, atualizadoAs } = resultado;
 
-    carregarDadosIniciais();
-  }, []);
+  useEffect(() => {
+    if (!periodoValido) return undefined;
+    let ativo = true;
+    getLogs({ de: inicioDoDia(dataInicio), ate: fimDoDia(dataFim) })
+      .then((dados) => {
+        if (!ativo) return;
+        const agora = new Date();
+        setResultado({
+          chave,
+          logs: dados,
+          erro: '',
+          atualizadoAs: `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`,
+        });
+      })
+      .catch((error) => {
+        if (ativo) setResultado({ chave, logs: [], erro: mensagemDeErro(error, 'Não foi possível carregar os registros.'), atualizadoAs: '' });
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [chave, dataInicio, dataFim, periodoValido]);
+
+  const carregarLogs = () => setRecarga((n) => n + 1);
 
   const logsFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -316,7 +326,15 @@ function LogsAcesso() {
                   </tr>
                 )}
 
-                {!carregando && logsDaPagina.length === 0 && (
+                {!carregando && erro && (
+                  <tr>
+                    <td colSpan={6} className="logs__estado-vazio">
+                      {erro}
+                    </td>
+                  </tr>
+                )}
+
+                {!carregando && !erro && logsDaPagina.length === 0 && (
                   <tr>
                     <td colSpan={6} className="logs__estado-vazio">
                       Nenhum registro encontrado para esse filtro.
@@ -324,7 +342,7 @@ function LogsAcesso() {
                   </tr>
                 )}
 
-                {logsDaPagina.map((log) => {
+                {!carregando && logsDaPagina.map((log) => {
                   const { data, hora } = formatarDataHora(log.dataHora);
                   return (
                     <tr key={log.id}>

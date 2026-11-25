@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { login } from '../../services/authService';
 import './Login.css';
+import logoSenai from '../../assets/logo_senai.png';
 
 function Login() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ function Login() {
       {/* Painel esquerdo — identidade/branding. Some no mobile. */}
       <div className="login__painel">
         <div className="login__marca">
-          <img src="../src/assets/logo_senai.png" alt="Logo SENAI" className="login__logo" />
+          <img src={logoSenai} alt="Logo SENAI" className="login__logo" />
         </div>
 
         <div className="login__mensagem">
@@ -52,7 +53,7 @@ function Login() {
       {/* Painel direito — formulário */}
       <div className="login__conteudo">
         <form className="login__form" onSubmit={handleSubmit}>
-          <img src="../src/assets/logo_senai.png" alt="Logo SENAI" className="login__logo login__logo--mobile" />
+          <img src={logoSenai} alt="Logo SENAI" className="login__logo login__logo--mobile" />
 
           <h2>Acesso Administrativo</h2>
           <p className="login__subtitulo">Entre com suas credenciais para continuar</p>

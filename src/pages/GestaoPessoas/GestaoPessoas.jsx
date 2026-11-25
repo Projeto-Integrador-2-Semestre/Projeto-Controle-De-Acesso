@@ -15,7 +15,8 @@ import {
     MoreVertical,
     ChevronLeft,
 } from 'lucide-react';
-import { getPessoas, alterarStatusAcesso } from '../../services/PessoasService.js';
+import { getPessoas, alterarStatusAcesso, RECURSOS_PESSOAS } from '../../services/PessoasService.js';
+import { mensagemDeErro } from '../../services/api.js';
 import './GestaoPessoas.css';
 
 const ITENS_POR_PAGINA = 10;
@@ -43,13 +44,16 @@ function GestaoPessoas() {
     const [filtroStatus, setFiltroStatus] = useState('todos');
     const [pagina, setPagina] = useState(1);
     const [sincronizadoAs, setSincronizadoAs] = useState(() => formatarHoraAtual());
+    const [erro, setErro] = useState('');
 
     useEffect(() => {
-        getPessoas().then((dados) => {
-            setPessoas(dados);
-            setCarregando(false);
-            setSincronizadoAs(formatarHoraAtual());
-        });
+        getPessoas()
+            .then((dados) => {
+                setPessoas(dados);
+                setSincronizadoAs(formatarHoraAtual());
+            })
+            .catch((error) => setErro(mensagemDeErro(error, 'Não foi possível carregar as pessoas.')))
+            .finally(() => setCarregando(false));
     }, []);
 
     const totalLiberados = pessoas.filter((p) => p.status === 'liberado').length;
@@ -82,8 +86,12 @@ function GestaoPessoas() {
 
     async function alternarBloqueio(pessoa) {
         const novoStatus = pessoa.status === 'liberado' ? 'bloqueado' : 'liberado';
-        const atualizada = await alterarStatusAcesso(pessoa.id, novoStatus);
-        setPessoas((atual) => atual.map((p) => (p.id === atualizada.id ? atualizada : p)));
+        try {
+            const atualizada = await alterarStatusAcesso(pessoa.id, novoStatus);
+            setPessoas((atual) => atual.map((p) => (p.id === atualizada.id ? atualizada : p)));
+        } catch (error) {
+            setErro(mensagemDeErro(error, 'Não foi possível alterar o acesso.'));
+        }
     }
 
     function numerosPagina() {
@@ -214,7 +222,15 @@ function GestaoPessoas() {
                                 </tr>
                             )}
 
-                            {!carregando && pessoasDaPagina.length === 0 && (
+                            {!carregando && erro && (
+                                <tr>
+                                    <td colSpan={7} className="gestao__estado-vazio">
+                                        {erro}
+                                    </td>
+                                </tr>
+                            )}
+
+                            {!carregando && !erro && pessoasDaPagina.length === 0 && (
                                 <tr>
                                     <td colSpan={7} className="gestao__estado-vazio">
                                         Nenhuma pessoa encontrada para esse filtro.
@@ -232,7 +248,7 @@ function GestaoPessoas() {
                                     </td>
                                     <td>
                                         <div className="gestao__nome">{p.nome}</div>
-                                        <div className="gestao__id">ID: #SP-{p.id}</div>
+                                        <div className="gestao__id">ID: #SP-{String(p.id).slice(-5)}</div>
                                         {p.motivoBloqueio && (
                                             <div className="gestao__motivo-bloqueio">{p.motivoBloqueio}</div>
                                         )}
@@ -256,8 +272,14 @@ function GestaoPessoas() {
                                         )}
                                     </td>
                                     <td>
-                                        <div>{p.dataCadastro}</div>
-                                        <div className="gestao__hora">às {p.horaCadastro}</div>
+                                        {p.dataCadastro ? (
+                                            <>
+                                                <div>{p.dataCadastro}</div>
+                                                <div className="gestao__hora">às {p.horaCadastro}</div>
+                                            </>
+                                        ) : (
+                                            <div className="gestao__hora" title="A API ainda não guarda a data do cadastro">—</div>
+                                        )}
                                     </td>
                                     <td>
                                         <div className="gestao__acoes-linha">
@@ -266,7 +288,12 @@ function GestaoPessoas() {
                                             </button>
                                             <button
                                                 className={`icone-acao ${p.status === 'bloqueado' ? 'icone-acao--verde' : ''}`}
-                                                title={p.status === 'liberado' ? 'Bloquear acesso' : 'Liberar acesso'}
+                                                title={
+                                                    !RECURSOS_PESSOAS.bloqueio
+                                                        ? 'Bloqueio ainda não disponível na API'
+                                                        : p.status === 'liberado' ? 'Bloquear acesso' : 'Liberar acesso'
+                                                }
+                                                disabled={!RECURSOS_PESSOAS.bloqueio}
                                                 onClick={() => alternarBloqueio(p)}
                                             >
                                                 {p.status === 'liberado' ? <Lock size={16} /> : <Unlock size={16} />}
