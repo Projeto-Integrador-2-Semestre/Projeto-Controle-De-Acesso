@@ -4,6 +4,7 @@ import Login from './pages/Login/Login.jsx';
 import RecuperarSenha from './pages/EsqueciSenha/RecuperarSenha.jsx';
 import GestaoPessoas from './pages/GestaoPessoas/GestaoPessoas.jsx';
 import LogsAcesso from './pages/Logs/LogsAcesso.jsx';
+import PainelLogs from './pages/Logs/PainelLogs.jsx';
 import CadastroPessoas from './pages/CadastroPessoa/CadastroPessoas.jsx';
 import Monitoramento from './pages/Monitoramento/Monitoramento.jsx';
 
@@ -29,6 +30,12 @@ function App() {
         <Route path="/logs" element={
           <MenuNavegacao>
             <LogsAcesso />
+          </MenuNavegacao>
+        } />
+
+        <Route path="/logs/painel" element={
+          <MenuNavegacao>
+            <PainelLogs />
           </MenuNavegacao>
         } />
 

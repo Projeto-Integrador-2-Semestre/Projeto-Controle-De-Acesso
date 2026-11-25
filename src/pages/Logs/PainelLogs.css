@@ -1,0 +1,696 @@
+.painel {
+  padding: 24px 28px 40px 28px;
+  font-family: Arial, sans-serif;
+  color: #1a202c;
+}
+
+.painel b {
+  color: #1a202c;
+}
+
+/* ==================== CABEÇALHO ==================== */
+.painel__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.painel__selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e53e3e;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.painel__cabecalho h1 {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.painel__cabecalho p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.painel__atualizacao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.painel__botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  color: #334155;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.painel__botao:hover:not(:disabled) {
+  border-color: #fca5a5;
+  color: #e53e3e;
+}
+
+.painel__botao:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.painel__girando {
+  animation: painelGirar 0.9s linear infinite;
+}
+
+@keyframes painelGirar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==================== FILTROS ==================== */
+.painel__filtros {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+}
+
+.painel__atalhos {
+  display: flex;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.painel__atalhos button {
+  border: none;
+  background: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.painel__atalhos button.painel__atalho--ativo {
+  background-color: #fff;
+  color: #e53e3e;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.painel__datas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.painel__datas label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.painel__datas input {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1a202c;
+}
+
+.painel__aviso {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #475569;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.painel__aviso--erro {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+/* ==================== INDICADORES ==================== */
+.painel__kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.painel__kpi {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.painel__kpi--destaque {
+  border-color: #bbf7d0;
+  background-color: #f0fdf4;
+}
+
+.painel__kpi-icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: #f1f5f9;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.painel__kpi--destaque .painel__kpi-icone {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.painel__kpi-rotulo {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.painel__kpi-valor {
+  display: block;
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 2px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel__kpi-detalhe {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ==================== CARTÕES / GRÁFICOS ==================== */
+.painel__grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.painel__cartao {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+
+.painel__cartao--largo {
+  grid-column: 1 / -1;
+}
+
+.painel__cartao-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.painel__cartao-topo h2 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.painel__cartao-topo p {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.painel__grafico {
+  width: 100%;
+  min-width: 0;
+}
+
+.painel__picos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.painel__picos span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.painel__picos i,
+.painel__tooltip-marca {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.painel__tooltip {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  font-size: 12px;
+  color: #475569;
+  min-width: 140px;
+}
+
+.painel__tooltip strong {
+  display: block;
+  color: #1a202c;
+  margin-bottom: 6px;
+}
+
+.painel__tooltip-linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.painel__tooltip-linha b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel__vazio {
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.painel__contador {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #334155;
+  background-color: #f1f5f9;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+/* ==================== MAPA DE CALOR ==================== */
+.painel__calor-rolagem {
+  overflow-x: auto;
+}
+
+.painel__calor {
+  display: grid;
+  gap: 2px;
+  min-width: 520px;
+}
+
+.painel__calor-linha {
+  display: contents;
+}
+
+.painel__calor-hora {
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
+  padding-bottom: 2px;
+}
+
+.painel__calor-dia {
+  font-size: 11px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+.painel__calor-celula {
+  position: relative;
+  height: 24px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+}
+
+.painel__calor-celula:hover {
+  outline: 2px solid #1a202c;
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+.painel__calor-celula:hover::after {
+  content: attr(data-dica);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1a202c;
+  color: #fff;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.painel__calor-legenda {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.painel__calor-legenda i {
+  width: 18px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.painel__calor-legenda span {
+  margin: 0 4px;
+}
+
+/* ==================== LIBERAÇÕES ==================== */
+.painel__liberacoes {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.painel__liberacoes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+.painel__liberacoes li:first-child {
+  border-top: none;
+}
+
+.painel__liberacoes strong {
+  display: block;
+  font-size: 13px;
+}
+
+.painel__liberacoes li span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.painel__status {
+  font-size: 11px !important;
+  font-weight: bold;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.painel__status--confirmada {
+  color: #047857 !important;
+  background-color: #ecfdf5;
+}
+
+.painel__status--expirada {
+  color: #b91c1c !important;
+  background-color: #fef2f2;
+}
+
+.painel__status--pendente {
+  color: #a16207 !important;
+  background-color: #fefce8;
+}
+
+/* ==================== TABELA POR PESSOA ==================== */
+.painel__busca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #94a3b8;
+  min-width: 240px;
+}
+
+.painel__busca input {
+  border: none;
+  outline: none;
+  padding: 8px 0;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+}
+
+.painel__tabela-rolagem {
+  overflow-x: auto;
+}
+
+.painel__tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.painel__tabela th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  background-color: #f8fafc;
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.painel__tabela td {
+  padding: 10px 12px;
+  border-top: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+
+.painel__tabela .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel__tabela tbody tr {
+  cursor: pointer;
+}
+
+.painel__tabela tbody tr:hover,
+.painel__tabela tbody tr:focus-visible,
+.painel__linha--ativa {
+  background-color: #fff7f7;
+  outline: none;
+}
+
+.painel__nome {
+  display: block;
+  font-weight: bold;
+}
+
+.painel__cpf {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.painel__situacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.painel__situacao--dentro {
+  color: #047857;
+  font-weight: bold;
+}
+
+/* ==================== GAVETA (LINHA DO TEMPO) ==================== */
+.painel__gaveta-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 110;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.painel__gaveta {
+  width: min(440px, 100%);
+  height: 100%;
+  background-color: #fff;
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.2);
+}
+
+.painel__gaveta-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.painel__gaveta-topo h3 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.painel__gaveta-topo span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.painel__fechar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background-color: #f1f5f9;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.painel__gaveta-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 13px;
+  color: #475569;
+  padding-bottom: 14px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.painel__visitas {
+  list-style: none;
+}
+
+.painel__visitas li {
+  display: grid;
+  grid-template-columns: 84px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+}
+
+.painel__visita-dia {
+  font-weight: bold;
+}
+
+.painel__visita-horario {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.painel__visita-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel__visita-marca--entrada {
+  color: #1c5cab;
+}
+
+.painel__visita-marca--saida {
+  color: #b4471c;
+}
+
+.painel__visita-seta {
+  color: #94a3b8;
+}
+
+.painel__visita-duracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+@media (max-width: 1280px) {
+  .painel__kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .painel__grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .painel {
+    padding: 16px;
+  }
+
+  .painel__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .painel__busca {
+    min-width: 0;
+    width: 100%;
+  }
+}
