@@ -1,4 +1,4 @@
-import api, { USE_MOCK } from './api.js';
+import { apiFetch, USE_MOCK } from './api.js';
 import { pessoasMock } from './PessoasMock.js';
 import { formatarCpf, somenteDigitos } from './formatadores.js';
 
@@ -31,7 +31,7 @@ export function getPessoas() {
       setTimeout(() => resolve([..._pessoas]), 300);
     });
   }
-  return api.get('/pessoa/listar', { params: { foto: false } }).then((res) => res.data.map(paraPessoaDaTela));
+  return apiFetch('/pessoa/listar?foto=false').then((pessoas) => pessoas.map(paraPessoaDaTela));
 }
 
 export function cadastrarPessoa(formData) {
@@ -66,7 +66,58 @@ export function cadastrarPessoa(formData) {
   dados.append('nome', formData.get('nome'));
   dados.append('cpf', somenteDigitos(formData.get('cpf')));
   dados.append('foto', formData.get('foto'));
-  return api.post('/pessoa/cadastro', dados).then((res) => res.data);
+  return apiFetch('/pessoa/cadastro', { method: 'POST', body: dados });
+}
+
+export function atualizarPessoa(cpf, formData) {
+  const cpfOriginal = somenteDigitos(cpf);
+  const nome = String(formData.get('nome') ?? '').trim();
+  const foto = formData.get('foto');
+
+  if (USE_MOCK) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const pessoa = _pessoas.find((item) => somenteDigitos(item.cpf) === cpfOriginal);
+        if (!pessoa) {
+          reject(new Error('Pessoa não encontrada.'));
+          return;
+        }
+
+        _pessoas = _pessoas.map((item) =>
+          somenteDigitos(item.cpf) === cpfOriginal
+            ? { ...item, nome, possuiFoto: foto ? true : item.possuiFoto }
+            : item
+        );
+        resolve(_pessoas.find((item) => somenteDigitos(item.cpf) === cpfOriginal));
+      }, 300);
+    });
+  }
+
+  const dados = new FormData();
+  dados.append('cpf', cpfOriginal);
+  dados.append('nome', nome);
+  if (foto && typeof foto !== 'string') dados.append('foto', foto);
+  return apiFetch('/pessoa/atualizar', { method: 'PUT', body: dados });
+}
+
+export function excluirPessoa(cpf) {
+  const cpfOriginal = somenteDigitos(cpf);
+
+  if (USE_MOCK) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const existe = _pessoas.some((item) => somenteDigitos(item.cpf) === cpfOriginal);
+        if (!existe) {
+          reject(new Error('Pessoa não encontrada.'));
+          return;
+        }
+        _pessoas = _pessoas.filter((item) => somenteDigitos(item.cpf) !== cpfOriginal);
+        resolve();
+      }, 300);
+    });
+  }
+
+  return apiFetch(`/pessoa/${encodeURIComponent(cpfOriginal)}`, { method: 'DELETE' });
 }
 
 export function alterarStatusAcesso(id, novoStatus) {
