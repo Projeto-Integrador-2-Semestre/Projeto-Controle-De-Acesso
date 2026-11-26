@@ -12,10 +12,17 @@ import {
     Pencil,
     Lock,
     Unlock,
-    MoreVertical,
     ChevronLeft,
+    Trash2,
+    X,
 } from 'lucide-react';
-import { getPessoas, alterarStatusAcesso, RECURSOS_PESSOAS } from '../../services/PessoasService.js';
+import {
+    getPessoas,
+    atualizarPessoa,
+    excluirPessoa,
+    alterarStatusAcesso,
+    RECURSOS_PESSOAS,
+} from '../../services/PessoasService.js';
 import { mensagemDeErro } from '../../services/api.js';
 import './GestaoPessoas.css';
 
@@ -45,6 +52,13 @@ function GestaoPessoas() {
     const [pagina, setPagina] = useState(1);
     const [sincronizadoAs, setSincronizadoAs] = useState(() => formatarHoraAtual());
     const [erro, setErro] = useState('');
+    const [pessoaEmEdicao, setPessoaEmEdicao] = useState(null);
+    const [nomeEdicao, setNomeEdicao] = useState('');
+    const [fotoEdicao, setFotoEdicao] = useState(null);
+    const [pessoaParaExcluir, setPessoaParaExcluir] = useState(null);
+    const [erroAcao, setErroAcao] = useState('');
+    const [salvando, setSalvando] = useState(false);
+    const [excluindo, setExcluindo] = useState(false);
 
     useEffect(() => {
         getPessoas()
@@ -94,6 +108,67 @@ function GestaoPessoas() {
         }
     }
 
+    function abrirEdicao(pessoa) {
+        setPessoaEmEdicao(pessoa);
+        setNomeEdicao(pessoa.nome);
+        setFotoEdicao(null);
+        setErroAcao('');
+    }
+
+    function fecharEdicao() {
+        if (salvando) return;
+        setPessoaEmEdicao(null);
+        setFotoEdicao(null);
+        setErroAcao('');
+    }
+
+    async function salvarEdicao(event) {
+        event.preventDefault();
+        const nome = nomeEdicao.trim();
+        if (!nome) {
+            setErroAcao('Informe o nome da pessoa.');
+            return;
+        }
+
+        const dados = new FormData();
+        dados.append('nome', nome);
+        if (fotoEdicao) dados.append('foto', fotoEdicao);
+
+        setSalvando(true);
+        setErroAcao('');
+        try {
+            await atualizarPessoa(pessoaEmEdicao.cpf, dados);
+            setPessoas((atual) => atual.map((p) => (
+                p.id === pessoaEmEdicao.id
+                    ? { ...p, nome, possuiFoto: fotoEdicao ? true : p.possuiFoto }
+                    : p
+            )));
+            setSincronizadoAs(formatarHoraAtual());
+            setPessoaEmEdicao(null);
+            setFotoEdicao(null);
+        } catch (error) {
+            setErroAcao(mensagemDeErro(error, 'Não foi possível atualizar a pessoa.'));
+        } finally {
+            setSalvando(false);
+        }
+    }
+
+    async function confirmarExclusao() {
+        if (!pessoaParaExcluir) return;
+        setExcluindo(true);
+        setErroAcao('');
+        try {
+            await excluirPessoa(pessoaParaExcluir.cpf);
+            setPessoas((atual) => atual.filter((p) => p.id !== pessoaParaExcluir.id));
+            setSincronizadoAs(formatarHoraAtual());
+            setPessoaParaExcluir(null);
+        } catch (error) {
+            setErroAcao(mensagemDeErro(error, 'Não foi possível excluir a pessoa.'));
+        } finally {
+            setExcluindo(false);
+        }
+    }
+
     function numerosPagina() {
         const numeros = [];
         const janela = 1;
@@ -112,6 +187,125 @@ function GestaoPessoas() {
 
     return (
             <div className="gestao">
+            {pessoaEmEdicao && (
+                <div className="modal__overlay" onClick={fecharEdicao}>
+                    <form
+                        className="modal__container gestao__modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="gestao-editar-titulo"
+                        onClick={(event) => event.stopPropagation()}
+                        onSubmit={salvarEdicao}
+                    >
+                        <div className="modal__header">
+                            <div>
+                                <span className="modal__eyebrow">Cadastro de pessoa</span>
+                                <h2 id="gestao-editar-titulo">Editar pessoa</h2>
+                            </div>
+                            <button
+                                type="button"
+                                className="modal__fechar"
+                                onClick={fecharEdicao}
+                                disabled={salvando}
+                                aria-label="Fechar edição"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <p className="modal__descricao">
+                            Atualize o nome ou envie uma nova foto. O CPF identifica o cadastro e não pode ser alterado.
+                        </p>
+
+                        <label className="modal__campo">
+                            <span>CPF</span>
+                            <input type="text" value={pessoaEmEdicao.cpf} readOnly />
+                        </label>
+                        <label className="modal__campo">
+                            <span>Nome completo</span>
+                            <input
+                                type="text"
+                                value={nomeEdicao}
+                                onChange={(event) => setNomeEdicao(event.target.value)}
+                                maxLength={150}
+                                autoFocus
+                                required
+                            />
+                        </label>
+                        <label className="modal__campo">
+                            <span>Nova foto (opcional)</span>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/jpg"
+                                onChange={(event) => setFotoEdicao(event.target.files?.[0] ?? null)}
+                            />
+                        </label>
+
+                        {erroAcao && <p className="modal__erro" role="alert">{erroAcao}</p>}
+
+                        <div className="modal__acoes">
+                            <button type="button" className="modal__cancelar" onClick={fecharEdicao} disabled={salvando}>
+                                Cancelar
+                            </button>
+                            <button type="submit" className="modal__confirmar" disabled={salvando}>
+                                {salvando ? 'Salvando...' : 'Salvar alterações'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {pessoaParaExcluir && (
+                <div className="modal__overlay" onClick={() => !excluindo && setPessoaParaExcluir(null)}>
+                    <div
+                        className="modal__container gestao__modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="gestao-excluir-titulo"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="modal__header">
+                            <div>
+                                <span className="modal__eyebrow">Ação permanente</span>
+                                <h2 id="gestao-excluir-titulo">Excluir pessoa</h2>
+                            </div>
+                            <button
+                                type="button"
+                                className="modal__fechar"
+                                onClick={() => setPessoaParaExcluir(null)}
+                                disabled={excluindo}
+                                aria-label="Fechar confirmação"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="modal__descricao">
+                            Tem certeza de que deseja excluir <strong>{pessoaParaExcluir.nome}</strong> (CPF {pessoaParaExcluir.cpf})?
+                            Esta ação não pode ser desfeita.
+                        </p>
+                        {erroAcao && <p className="modal__erro" role="alert">{erroAcao}</p>}
+                        <div className="modal__acoes">
+                            <button
+                                type="button"
+                                className="modal__cancelar"
+                                onClick={() => setPessoaParaExcluir(null)}
+                                disabled={excluindo}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                className="gestao__excluir-confirmar"
+                                onClick={confirmarExclusao}
+                                disabled={excluindo}
+                            >
+                                {excluindo ? 'Excluindo...' : 'Excluir pessoa'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
                 {/* Cabeçalho da página */}
                 <div className="gestao__topo">
                     <div className="gestao__breadcrumb">
@@ -283,7 +477,13 @@ function GestaoPessoas() {
                                     </td>
                                     <td>
                                         <div className="gestao__acoes-linha">
-                                            <button className="icone-acao" title="Editar">
+                                            <button
+                                                type="button"
+                                                className="icone-acao"
+                                                title={`Editar ${p.nome}`}
+                                                aria-label={`Editar ${p.nome}`}
+                                                onClick={() => abrirEdicao(p)}
+                                            >
                                                 <Pencil size={16} />
                                             </button>
                                             <button
@@ -298,8 +498,17 @@ function GestaoPessoas() {
                                             >
                                                 {p.status === 'liberado' ? <Lock size={16} /> : <Unlock size={16} />}
                                             </button>
-                                            <button className="icone-acao" title="Mais opções">
-                                                <MoreVertical size={16} />
+                                            <button
+                                                type="button"
+                                                className="icone-acao icone-acao--excluir"
+                                                title={`Excluir ${p.nome}`}
+                                                aria-label={`Excluir ${p.nome}`}
+                                                onClick={() => {
+                                                    setPessoaParaExcluir(p);
+                                                    setErroAcao('');
+                                                }}
+                                            >
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>

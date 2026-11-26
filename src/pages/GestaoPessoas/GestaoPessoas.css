@@ -374,6 +374,36 @@
   color: #10b981;
 }
 
+.icone-acao--excluir:hover {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.gestao__modal .modal__campo {
+  margin-bottom: 14px;
+}
+
+.gestao__modal .modal__campo input[readonly] {
+  background-color: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.gestao__modal button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gestao__excluir-confirmar {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  background: #dc2626;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ==================== PAGINAÇÃO ==================== */
 .gestao__paginacao {
   display: flex;
