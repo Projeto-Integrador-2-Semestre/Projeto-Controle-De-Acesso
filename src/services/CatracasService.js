@@ -1,4 +1,4 @@
-import api, { USE_MOCK } from './api.js';
+import { apiFetch, USE_MOCK } from './api.js';
 import { estacoesMock } from './EstacoesMock.js';
 
 // ----- Simulação (sem API): o "tablet" confirma a liberação ~2 s depois do pedido -----
@@ -27,7 +27,7 @@ export function getCatracas() {
   if (USE_MOCK) {
     return new Promise((resolve) => setTimeout(() => resolve(catracasMock()), 200));
   }
-  return api.get('/catracas').then((res) => res.data);
+  return apiFetch('/catracas');
 }
 
 /**
@@ -56,7 +56,7 @@ export function liberarCatraca(catracaId, { operador, motivo } = {}) {
       }, 300);
     });
   }
-  return api.post(`/catracas/${catracaId}/liberar`, { operador, motivo }).then((res) => res.data);
+  return apiFetch(`/catracas/${catracaId}/liberar`, { method: 'POST', body: { operador, motivo } });
 }
 
 /** Consulta o status de uma liberação: "pendente", "confirmada" (tablet exibiu) ou "expirada". */
@@ -64,7 +64,7 @@ export function getLiberacao(liberacaoId) {
   if (USE_MOCK) {
     return new Promise((resolve) => setTimeout(() => resolve(liberacaoMock(liberacaoId)), 150));
   }
-  return api.get(`/catracas/liberacoes/${liberacaoId}`).then((res) => res.data);
+  return apiFetch(`/catracas/liberacoes/${liberacaoId}`);
 }
 
 /** Histórico das liberações manuais, mais recentes primeiro. */
@@ -74,5 +74,5 @@ export function getLiberacoes(limite = 100) {
       setTimeout(() => resolve([..._liberacoesMock.keys()].reverse().map(liberacaoMock).slice(0, limite)), 150)
     );
   }
-  return api.get('/catracas/liberacoes', { params: { limite } }).then((res) => res.data);
+  return apiFetch('/catracas/liberacoes', { params: { limite } });
 }

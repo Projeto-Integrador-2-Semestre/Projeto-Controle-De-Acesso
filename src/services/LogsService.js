@@ -1,4 +1,4 @@
-import api, { USE_MOCK } from './api.js';
+import { apiFetch, USE_MOCK } from './api.js';
 import { logsMock } from './LogsMock.js';
 import { dataHoraLocal, mascararCpf } from './formatadores.js';
 
@@ -41,13 +41,12 @@ export function getLogs({ de, ate } = {}) {
       }, 300);
     });
   }
-  return api
-    .get('/logs', {
-      params: {
-        de: de ? de.toISOString() : undefined,
-        ate: ate ? ate.toISOString() : undefined,
-        limite: LIMITE_REGISTROS,
-      },
-    })
-    .then((res) => res.data.map(paraLogDaTela));
+  return apiFetch('/logs', {
+    params: {
+      de: de ? de.toISOString() : undefined,
+      ate: ate ? ate.toISOString() : undefined,
+      limite: LIMITE_REGISTROS,
+    },
+  })
+    .then((logs) => logs.map(paraLogDaTela));
 }
