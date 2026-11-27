@@ -13,7 +13,7 @@ O sistema foi desenvolvido como uma Single Page Application (SPA) para proporcio
 
 > [!IMPORTANT]
 > **Arquitetura Front-End / Back-End:**
-> A aplicação consome a API Back-End em Java (login, pessoas, bloqueio, logs e catracas). Só o monitoramento de dispositivos ainda usa dados simulados (a tela avisa) — veja a tabela em *Integração com o Back-End em Java*.
+> A aplicação consome a API Back-End em Java (login, pessoas, bloqueio, logs, catracas e monitoramento de dispositivos) — veja a tabela em *Integração com o Back-End em Java*.
 
 ---
 
@@ -82,7 +82,12 @@ Depois do login, todas as chamadas levam o header `Authorization: Bearer <token>
 | Lista de catracas do botão "Liberar Catraca" | `GET /catracas` | ✅ integrado |
 | Liberação manual de catraca | `POST /catracas/{id}/liberar` → acompanha `GET /catracas/liberacoes/{id}` | ✅ integrado |
 | Histórico de liberações manuais (Painel) | `GET /catracas/liberacoes` | ✅ integrado |
-| Monitoramento de dispositivos (ping, sincronizar, teste de giro, reiniciar, bloqueio geral) | `/dispositivos/...` (ainda não existe na API) | ⏳ simulado — a tela mostra o selo "Dados simulados" |
+| Monitoramento: estações, ping, sincronizar facial, syslog e bloqueio geral | `/dispositivos/estacoes`, `.../ping`, `.../sincronizar-facial`, `.../logs`, `/dispositivos/bloqueio-geral` | ✅ integrado (atualiza sozinho a cada 15 s) |
+| Testar giro, reiniciar e ver vídeo | `.../testar-giro`, `.../reiniciar` | ⏳ dependem do relé da catraca; a API responde 501 e a tela mostra o motivo |
+
+No monitoramento, o totem aparece **online** enquanto o tablet consulta a API (a cada 1,5 s, a mesma consulta da liberação
+manual); sem contato por mais de 10 s, ele fica **offline** e a estação entra em alerta. O status do reconhecimento vem do
+`/health` da face_api. O **bloqueio geral** faz a face_api recusar todos os rostos e suspende as liberações manuais.
 
 Logs gravados antes de o totem informar a catraca aparecem como "Totem de Reconhecimento Facial".
 Pessoas cadastradas antes de a API guardar a data aparecem com "—" na coluna Data do Cadastro.
@@ -179,8 +184,11 @@ Por isso rodam sem a API e sem o banco: o Playwright sobe o Vite sozinho apontan
 | `autenticacao.spec.js` | CT-01, CT-15, CT-16 e CT-20: login, rota protegida, sessão expirada, "Lembrar-me" e logout |
 | `pessoas.spec.js` | CT-04, CT-17 e CT-18: listagem com status e data, bloqueio com motivo, liberação e CPF duplicado |
 | `cadastro.spec.js` | CT-08 a CT-11: máscara do CPF, cadastro sem foto, PNG recusado e JPEG acima de 5 MB |
-| `logs.spec.js` | CT-19: catraca da passagem nos logs |
-| `monitoramento.spec.js` | CT-12 e CT-13: painel lateral com Escape, bloqueio geral e aviso de dados simulados |
+| `logs.spec.js` | CT-05 e CT-19: atalhos Hoje/Ontem, busca e catraca da passagem |
+| `monitoramento.spec.js` | CT-06, CT-12 e CT-13: estações da API, ping, sincronizar, testar giro (501), syslog e bloqueio geral |
+| `responsivo.spec.js` | CT-07: menu hambúrguer e ausência de rolagem horizontal em 375 px |
+
+O workflow `.github/workflows/testes.yml` roda lint, build e esses testes em cada pull request e push para `main` e `develop`.
 
 O envio do cadastro com foto (e o CT-14, detecção facial) não é automatizado: o MediaPipe exige uma foto com rosto real
 e baixa o modelo de um CDN externo. O CT-18 é verificado pela camada de serviços.
