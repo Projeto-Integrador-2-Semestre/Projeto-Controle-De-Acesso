@@ -1,6 +1,6 @@
 // Dados de teste da tela de Monitoramento de Dispositivos & Catracas.
-// A API Java ainda não tem os endpoints de dispositivos, então a tela de Monitoramento
-// usa estes dados até lá (ver MONITORAMENTO_NA_API em MonitoramentoService.js).
+// Só usados no modo simulado (desenvolvimento sem API, ver USE_MOCK em api.js).
+// Com a API ligada, a tela usa GET /dispositivos/estacoes.
 
 export const estacoesMock = [
   {
