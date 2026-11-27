@@ -49,6 +49,9 @@ test('depois do login volta para a tela que a pessoa tentou abrir', async ({ pag
 test('CT-20: token inválido encerra a sessão e avisa', async ({ page }) => {
   await entrar(page);
   await expect(page).toHaveURL('/gestao');
+  // Espera a gestão terminar de carregar: senão, numa máquina lenta, a primeira busca já sai com o
+  // token inválido, o aviso aparece nesta página e o teste recarrega depois dele
+  await expect(page.getByText('Maria Souza')).toBeVisible();
   await page.evaluate(() => sessionStorage.setItem('token', 'token-vencido'));
   await page.goto('/gestao');
   await expect(page).toHaveURL('/');
