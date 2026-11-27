@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   KeyRound,
   Users,
@@ -24,6 +24,7 @@ const ACOMPANHAMENTO_MS = 35000;
 const INTERVALO_CONSULTA_MS = 1000;
 
 function MenuNavegacao({ children }) {
+  const navigate = useNavigate();
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
@@ -331,7 +332,8 @@ function MenuNavegacao({ children }) {
           </nav>
 
           <div className="sidebar__rodape">
-            <button className="sidebar__bloqueio">
+            {/* O bloqueio geral fica na tela de Monitoramento, com confirmação e estado atual */}
+            <button className="sidebar__bloqueio" onClick={() => navigate('/monitoramento')}>
               <Ban size={16} />
               Bloqueio Geral Catracas
             </button>
