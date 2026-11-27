@@ -167,6 +167,23 @@ No diretório do projeto, você pode executar:
 - `npm run build` — Compila e otimiza a aplicação para produção na pasta `dist/`.
 - `npm run preview` — Executa um servidor local para visualizar a versão de produção gerada pelo `build`.
 - `npm run lint` — Executa o ESLint para verificar a padronização e boas práticas de código.
+- `npm run test:e2e` — Roda os testes de navegador (Playwright). Na primeira vez, instale o navegador com `npx playwright install chromium`.
+
+### Testes de navegador (Playwright)
+
+Os testes ficam em `e2e/` e usam uma API simulada dentro do próprio teste (`e2e/apiFalsa.js`), no mesmo formato da API Java.
+Por isso rodam sem a API e sem o banco: o Playwright sobe o Vite sozinho apontando para essa API falsa.
+
+| Arquivo | Cenários (numeração do TCC) |
+| :--- | :--- |
+| `autenticacao.spec.js` | CT-01, CT-15, CT-16 e CT-20: login, rota protegida, sessão expirada, "Lembrar-me" e logout |
+| `pessoas.spec.js` | CT-04, CT-17 e CT-18: listagem com status e data, bloqueio com motivo, liberação e CPF duplicado |
+| `cadastro.spec.js` | CT-08 a CT-11: máscara do CPF, cadastro sem foto, PNG recusado e JPEG acima de 5 MB |
+| `logs.spec.js` | CT-19: catraca da passagem nos logs |
+| `monitoramento.spec.js` | CT-12 e CT-13: painel lateral com Escape, bloqueio geral e aviso de dados simulados |
+
+O envio do cadastro com foto (e o CT-14, detecção facial) não é automatizado: o MediaPipe exige uma foto com rosto real
+e baixa o modelo de um CDN externo. O CT-18 é verificado pela camada de serviços.
 
 ---
 
