@@ -1,6 +1,6 @@
 // Dados de teste para a tela de Gestão de Pessoas.
-// Quando a API Java estiver pronta, o pessoasService.js troca essas funções
-// por chamadas reais (axios) — a página não precisa mudar.
+// Só usados no modo simulado (desenvolvimento sem API, ver USE_MOCK em api.js).
+// Com a API ligada este arquivo nem é carregado.
 
 const NOMES = [
   'Matheus Henrique de Souza Santos',
