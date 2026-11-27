@@ -26,6 +26,7 @@ import {
     testarGiro,
     reiniciarDispositivo,
     bloqueioGeral,
+    MONITORAMENTO_SIMULADO,
 } from '../../services/MonitoramentoService';
 import '../Monitoramento/Monitoramento.css';
 
@@ -176,6 +177,14 @@ function Monitoramento() {
                         <h1>Monitoramento de Dispositivos &amp; Catracas</h1>
                         <span className="mon__selo-campus">Campus Sorocaba</span>
                         <span className="mon__selo-pontos">{estacoes.length} Pontos de Acesso Integrados</span>
+                        {MONITORAMENTO_SIMULADO && (
+                            <span
+                                className="mon__selo-simulado"
+                                title="A API ainda não tem os endpoints de dispositivos. Os dados e as ações desta tela são simulados."
+                            >
+                                Dados simulados
+                            </span>
+                        )}
                     </div>
                     <p className="mon__subtitulo">
                         Telemetria e status em tempo real das catracas físicas e dos terminais de biometria facial
