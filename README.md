@@ -13,7 +13,7 @@ O sistema foi desenvolvido como uma Single Page Application (SPA) para proporcio
 
 > [!IMPORTANT]
 > **Arquitetura Front-End / Back-End:**
-> A aplicação consome a API Back-End em Java (pessoas, logs e catracas). Login e monitoramento de dispositivos ainda são simulados localmente — veja a tabela em *Integração com o Back-End em Java*.
+> A aplicação consome a API Back-End em Java (login, pessoas, bloqueio, logs e catracas). Só o monitoramento de dispositivos ainda usa dados simulados (a tela avisa) — veja a tabela em *Integração com o Back-End em Java*.
 
 ---
 
@@ -59,7 +59,7 @@ O sistema foi desenvolvido como uma Single Page Application (SPA) para proporcio
 - **[React 19](https://react.dev/)**: Biblioteca principal para construção da interface declarativa em componentes.
 - **[Vite](https://vite.dev/)**: Ferramenta de build e servidor de desenvolvimento ultrarrápido.
 - **[React Router DOM](https://reactrouter.com/)**: Gerenciamento das rotas da aplicação (SPA).
-- **[Axios](https://axios-http.com/)**: Cliente HTTP para comunicação e consumo da API Back-End em Java.
+- **Fetch API**: cliente HTTP nativo usado em `src/services/api.js` para consumir a API Back-End em Java (o Axios continua listado no `package.json`, mas não é mais usado pelos serviços).
 - **[Google MediaPipe Vision](https://developers.google.com/mediapipe/solutions/vision/face_detector)**: Modelos de visão computacional para detecção facial client-side.
 - **[Lucide React](https://lucide.dev/)**: Biblioteca de ícones moderna e consistente.
 - **CSS3 Nativo**: Estilização modularizada, temas visuais, animações e layout responsivo.
@@ -68,22 +68,48 @@ O sistema foi desenvolvido como uma Single Page Application (SPA) para proporcio
 
 ## 🔌 Integração com o Back-End em Java
 
-Os serviços em `src/services/` chamam a API Java (Spring Boot, repositório `ApiControleDeAcessoPI2`) via Axios (`src/services/api.js`).
-Sem `VITE_API_URL` configurada (ou com `VITE_USE_MOCK=true`) eles voltam a usar os dados simulados, para desenvolver a interface sem o Back-End.
+Os serviços em `src/services/` chamam a API Java (Spring Boot, repositório `ApiControleDeAcessoPI2`) com `fetch` (`src/services/api.js`).
+Depois do login, todas as chamadas levam o header `Authorization: Bearer <token>`. Se a API responder 401 (token vencido), a sessão é limpa e o usuário volta para o login.
 
 | Tela / recurso | Endpoint da API Java | Situação |
 | :--- | :--- | :---: |
-| Listagem de pessoas | `GET /pessoa/listar?foto=false` | ✅ integrado |
-| Cadastro de pessoa (multipart: `nome`, `cpf`, `foto`) | `POST /pessoa/cadastro` (409 se o CPF já existir) | ✅ integrado |
-| Logs de entrada/saída e Painel de Análise | `GET /logs?de=&ate=&tipo=&cpf=&limite=` | ✅ integrado |
+| Login | `POST /auth/login` (usuário/senha definidos nas variáveis `ADMIN_*` da API) | ✅ integrado |
+| Listagem de pessoas (com status, motivo do bloqueio e data do cadastro) | `GET /pessoa/listar?foto=false` | ✅ integrado |
+| Cadastro de pessoa (multipart: `nome`, `cpf`, `foto`) | `POST /pessoa/cadastro` (409 → "Já existe uma pessoa cadastrada com este CPF") | ✅ integrado |
+| Editar / excluir pessoa | `PUT /pessoa/atualizar` / `DELETE /pessoa/{cpf}` | ✅ integrado |
+| Bloquear/liberar acesso de uma pessoa | `PATCH /pessoa/{cpf}/status` | ✅ integrado (o totem passa a recusar a pessoa) |
+| Logs de entrada/saída e Painel de Análise (com a catraca da passagem) | `GET /logs?de=&ate=&tipo=&cpf=&limite=` | ✅ integrado |
 | Lista de catracas do botão "Liberar Catraca" | `GET /catracas` | ✅ integrado |
 | Liberação manual de catraca | `POST /catracas/{id}/liberar` → acompanha `GET /catracas/liberacoes/{id}` | ✅ integrado |
 | Histórico de liberações manuais (Painel) | `GET /catracas/liberacoes` | ✅ integrado |
-| Login | — | ⏳ ainda simulado (`admin` / `1234`) |
-| Bloquear/liberar acesso de uma pessoa | — | ⏳ não existe na API (botão desabilitado) |
-| Data do cadastro da pessoa | — | ⏳ a tabela `pessoa` não guarda |
-| Monitoramento de dispositivos (ping, sincronizar, teste de giro, reiniciar, bloqueio geral) | — | ⏳ ainda simulado |
-| Catraca em que a passagem aconteceu (coluna "Ponto de Acesso") | — | ⏳ o totem não envia essa informação |
+| Monitoramento de dispositivos (ping, sincronizar, teste de giro, reiniciar, bloqueio geral) | `/dispositivos/...` (ainda não existe na API) | ⏳ simulado — a tela mostra o selo "Dados simulados" |
+
+Logs gravados antes de o totem informar a catraca aparecem como "Totem de Reconhecimento Facial".
+Pessoas cadastradas antes de a API guardar a data aparecem com "—" na coluna Data do Cadastro.
+
+### Ativando a API ou o modo simulado
+
+| Situação | O que acontece |
+| :--- | :--- |
+| `VITE_API_URL` preenchida | Usa a API (login real, dados reais) |
+| `npm run dev` sem `VITE_API_URL`, ou `VITE_USE_MOCK=true` | Modo simulado: dados de exemplo de `src/services/mocks/`, login `admin` / `1234` |
+| `npm run build` sem `VITE_API_URL` | As telas mostram erro de configuração (o build de produção nunca usa dados falsos) |
+
+Os arquivos de `src/services/mocks/` só são carregados no modo simulado (import dinâmico), então não entram no caminho de produção.
+
+### Sessão
+
+O token fica no `sessionStorage` (some ao fechar a aba). Marcando **Lembrar-me** no login, ele vai para o `localStorage`.
+Nos dois casos ele vence sozinho no prazo definido pela API (`JWT_VALIDADE_HORAS`, padrão 8 h). As telas internas exigem login:
+quem abre uma delas sem sessão é levado ao login e, depois de entrar, volta para a tela que tentou abrir.
+
+### Validando a integração antes da apresentação
+
+1. A API no Render dorme no plano gratuito: abra `<url-da-api>/health` cerca de 1 minuto antes.
+2. Gere o build com `VITE_API_URL` apontando para a API publicada e confira:
+   login, cadastro (e cadastro repetido → mensagem de CPF duplicado), listagem, bloqueio/desbloqueio,
+   logs (com a catraca) e liberação manual de catraca.
+3. Para o bloqueio valer na hora no totem, a API precisa da variável `FACE_API_URL` (senão vale em até 60 s).
 
 ### Liberação manual de catraca
 
@@ -121,6 +147,7 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
    ```env
    VITE_API_URL=http://localhost:8080
    ```
+   Com a API local, entre com o usuário e a senha definidos nas variáveis `ADMIN_USUARIO` / `ADMIN_SENHA` da API (padrão `admin` / `1234`).
 
 4. **Inicie o servidor de desenvolvimento:**
    ```bash
@@ -158,7 +185,7 @@ front-end-pi/
 │   │   ├── CadastroPessoa/ # Formulário com captura e validação facial (MediaPipe)
 │   │   ├── Logs/           # Histórico de passagens e Painel de Análise (gráficos)
 │   │   └── Monitoramento/  # Telemetria e controle de catracas em tempo real
-│   ├── services/           # Configuração do Axios (api.js), chamadas HTTP e Mocks
+│   ├── services/           # api.js (fetch + token), sessão, chamadas HTTP e mocks/ (modo simulado)
 │   ├── App.jsx             # Definição e proteção de rotas
 │   ├── index.css           # Variáveis globais de estilo e reset CSS
 │   └── main.jsx            # Ponto de entrada da aplicação React
