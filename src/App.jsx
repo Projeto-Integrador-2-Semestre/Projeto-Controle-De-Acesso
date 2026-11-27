@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import MenuNavegacao from './components/MenuNavegacao.jsx';
+import RotaProtegida from './components/RotaProtegida.jsx';
 import Login from './pages/Login/Login.jsx';
 import RecuperarSenha from './pages/EsqueciSenha/RecuperarSenha.jsx';
 import GestaoPessoas from './pages/GestaoPessoas/GestaoPessoas.jsx';
@@ -20,35 +21,45 @@ function App() {
 
         <Route path="/recuperarsenha" element={<RecuperarSenha />} />
 
-        {/* Rotas envolvidas pelo MenuNavegacao */}
+        {/* Rotas envolvidas pelo MenuNavegacao (exigem login) */}
         <Route path="/gestao" element={
-          <MenuNavegacao>
-            <GestaoPessoas />
-          </MenuNavegacao>
+          <RotaProtegida>
+            <MenuNavegacao>
+              <GestaoPessoas />
+            </MenuNavegacao>
+          </RotaProtegida>
         } />
         
         <Route path="/logs" element={
-          <MenuNavegacao>
-            <LogsAcesso />
-          </MenuNavegacao>
+          <RotaProtegida>
+            <MenuNavegacao>
+              <LogsAcesso />
+            </MenuNavegacao>
+          </RotaProtegida>
         } />
 
         <Route path="/logs/painel" element={
-          <MenuNavegacao>
-            <PainelLogs />
-          </MenuNavegacao>
+          <RotaProtegida>
+            <MenuNavegacao>
+              <PainelLogs />
+            </MenuNavegacao>
+          </RotaProtegida>
         } />
 
         <Route path="/monitoramento" element={
-          <MenuNavegacao>
-            <Monitoramento />
-          </MenuNavegacao>
+          <RotaProtegida>
+            <MenuNavegacao>
+              <Monitoramento />
+            </MenuNavegacao>
+          </RotaProtegida>
         } />
 
         <Route path="/pessoas/cadastro" element={
-          <MenuNavegacao>
-            <CadastroPessoas />
-          </MenuNavegacao>
+          <RotaProtegida>
+            <MenuNavegacao>
+              <CadastroPessoas />
+            </MenuNavegacao>
+          </RotaProtegida>
         } />
       </Routes>
     </BrowserRouter>
