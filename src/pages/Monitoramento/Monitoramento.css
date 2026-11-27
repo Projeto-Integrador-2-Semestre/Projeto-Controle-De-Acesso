@@ -45,6 +45,17 @@
   font-family: Consolas, Monaco, monospace;
 }
 
+.mon__selo-simulado {
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid #fcd34d;
+  cursor: help;
+}
+
 .mon__selo-pontos {
   background-color: #e2e8f0;
   color: #334155;
@@ -1063,4 +1074,27 @@
     max-width: none;
     bottom: 80px;
   }
+}
+/* Estados reais vindos da API (totem sem contato, face_api fora do ar, bloqueio geral) */
+.selo-status--vermelho {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.selo-status--vermelho-solido {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.mon__estado-erro {
+  color: #b91c1c;
+}
+
+.mon__rodape-bloqueio {
+  color: #b91c1c;
+}
+
+.mon__bloqueio-flutuante--ativo {
+  background-color: #047857;
+  box-shadow: 0 8px 20px rgba(4, 120, 87, 0.35);
 }

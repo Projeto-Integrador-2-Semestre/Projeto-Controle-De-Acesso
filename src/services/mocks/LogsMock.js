@@ -1,6 +1,6 @@
 // Dados de teste para a tela de Logs de Entrada/Saída.
-// Quando a API Java estiver pronta, o logsService.js troca essas funções
-// por chamadas reais (axios) — a página não precisa mudar.
+// Só usados no modo simulado (desenvolvimento sem API, ver USE_MOCK em api.js).
+// Com a API ligada este arquivo nem é carregado.
 
 const PESSOAS = [
   { nome: 'Lucas Gabriel Ribeiro Martins', cpf: '412.***.898-04' },

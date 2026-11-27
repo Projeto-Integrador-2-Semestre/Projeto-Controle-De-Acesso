@@ -1,5 +1,9 @@
 name: Detecta Segredos
 
+# Usa o CLI do gitleaks diretamente (open source, sem licença).
+# A gitleaks-action exige o secret GITLEAKS_LICENSE em organizações, e o GitHub
+# não repassa secrets para PRs vindos de forks — por isso o check falhava nesses PRs.
+
 on:
   pull_request:
     branches: [main, develop]
@@ -9,7 +13,9 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+
+env:
+  GITLEAKS_VERSION: 8.30.1
 
 jobs:
   gitleaks:
@@ -23,10 +29,31 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Scan repository history and changes
-        uses: gitleaks/gitleaks-action@v3
+      - name: Install gitleaks
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" version
+
+      - name: Scan commits
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_ENABLE_COMMENTS: "true"
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            # Pull request: verifica apenas os commits do PR
+            LOG_OPTS="${BASE_SHA}..${HEAD_SHA}"
+          else
+            # Push / manual: verifica todo o histórico
+            LOG_OPTS="--all"
+          fi
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose --exit-code 1 \
+            --report-format sarif --report-path gitleaks.sarif \
+            --log-opts="$LOG_OPTS" .
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks.sarif

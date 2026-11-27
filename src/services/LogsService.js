@@ -1,5 +1,4 @@
-import api, { USE_MOCK } from './api.js';
-import { logsMock } from './LogsMock.js';
+import { apiFetch, USE_MOCK } from './api.js';
 import { dataHoraLocal, mascararCpf } from './formatadores.js';
 
 const LIMITE_REGISTROS = 5000;
@@ -17,9 +16,9 @@ function paraLogDaTela(log) {
     nome: log.nome ?? 'Pessoa removida',
     cpf: mascararCpf(log.cpf),
     cpfCompleto: log.cpf,
-    // O totem ainda não informa à face_api qual catraca registrou a passagem
-    catraca: 'Totem de Reconhecimento Facial',
-    local: 'Registro automático (face_api)',
+    // O totem informa a catraca à face_api; os registros antigos vêm sem ela
+    catraca: log.catracaNome ?? 'Totem de Reconhecimento Facial',
+    local: log.catracaLocal ?? 'Registro automático (face_api)',
     metodo: 'Facial',
     status: 'liberado', // só passagens autorizadas são gravadas
   };
@@ -32,22 +31,19 @@ function mockParaTela(log) {
 /**
  * Busca os logs de entrada/saída. `de` e `ate` (Date) limitam o período no servidor.
  */
-export function getLogs({ de, ate } = {}) {
+export async function getLogs({ de, ate } = {}) {
   if (USE_MOCK) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const dados = logsMock.map(mockParaTela).filter((l) => (!de || l.instante >= de) && (!ate || l.instante <= ate));
-        resolve(dados);
-      }, 300);
-    });
+    // Só em desenvolvimento sem API; o mock é carregado sob demanda
+    const { logsMock } = await import('./mocks/LogsMock.js');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return logsMock.map(mockParaTela).filter((l) => (!de || l.instante >= de) && (!ate || l.instante <= ate));
   }
-  return api
-    .get('/logs', {
-      params: {
-        de: de ? de.toISOString() : undefined,
-        ate: ate ? ate.toISOString() : undefined,
-        limite: LIMITE_REGISTROS,
-      },
-    })
-    .then((res) => res.data.map(paraLogDaTela));
+  return apiFetch('/logs', {
+    params: {
+      de: de ? de.toISOString() : undefined,
+      ate: ate ? ate.toISOString() : undefined,
+      limite: LIMITE_REGISTROS,
+    },
+  })
+    .then((logs) => logs.map(paraLogDaTela));
 }
