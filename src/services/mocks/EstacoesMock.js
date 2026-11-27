@@ -1,6 +1,6 @@
 // Dados de teste da tela de Monitoramento de Dispositivos & Catracas.
-// Quando a API Java estiver pronta, o monitoramentoService.js troca essas funções
-// por chamadas reais (axios/WebSocket) — a página não precisa mudar.
+// A API Java ainda não tem os endpoints de dispositivos, então a tela de Monitoramento
+// usa estes dados até lá (ver MONITORAMENTO_NA_API em MonitoramentoService.js).
 
 export const estacoesMock = [
   {

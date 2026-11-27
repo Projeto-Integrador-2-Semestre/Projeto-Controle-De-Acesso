@@ -1,6 +1,18 @@
-import { estacoesMock, logsMockDaEstacao } from './EstacoesMock.js';
+import { apiFetch, USE_MOCK } from './api.js';
 
-const USE_MOCK = true;
+/**
+ * A API Java ainda não tem os endpoints de dispositivos (/dispositivos/...).
+ * Enquanto isso, esta tela usa dados simulados mesmo com a API ligada, e mostra um aviso.
+ * Quando a API ganhar os endpoints, basta trocar para true: as chamadas abaixo já estão prontas.
+ */
+const MONITORAMENTO_NA_API = false;
+
+export const MONITORAMENTO_SIMULADO = USE_MOCK || !MONITORAMENTO_NA_API;
+
+async function mock() {
+  return import('./mocks/EstacoesMock.js');
+}
+const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function normalizarIdentificador(valor, nomeParametro) {
   const texto = String(valor ?? '').trim();
@@ -12,61 +24,57 @@ function normalizarIdentificador(valor, nomeParametro) {
   return texto;
 }
 
-export function getEstacoes() {
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve([...estacoesMock]), 300));
+export async function getEstacoes() {
+  if (MONITORAMENTO_SIMULADO) {
+    const { estacoesMock } = await mock();
+    await esperar(300);
+    return [...estacoesMock];
   }
-  // return api.get('/dispositivos/estacoes').then((res) => res.data);
+  return apiFetch('/dispositivos/estacoes');
 }
 
-export function getLogsDaEstacao(nomeEstacao) {
-  const estacao = normalizarIdentificador(nomeEstacao, 'nomeEstacao');
+export async function getLogsDaEstacao(idEstacao) {
+  const estacao = normalizarIdentificador(idEstacao, 'idEstacao');
 
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve(logsMockDaEstacao(estacao)), 200));
+  if (MONITORAMENTO_SIMULADO) {
+    const { logsMockDaEstacao } = await mock();
+    await esperar(200);
+    return logsMockDaEstacao(estacao);
   }
-  // return api.get(`/dispositivos/estacoes/${id}/logs`).then((res) => res.data);
+  return apiFetch(`/dispositivos/estacoes/${encodeURIComponent(estacao)}/logs`);
 }
 
-export function enviarPing(nomeDispositivo) {
-  const nome = normalizarIdentificador(nomeDispositivo, 'nomeDispositivo');
+/** Ações remotas: POST /dispositivos/estacoes/{id}/{acao}. */
+async function acaoNoDispositivo(idDispositivo, acao, respostaSimulada, atrasoMs) {
+  const id = normalizarIdentificador(idDispositivo, 'idDispositivo');
 
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve({ ok: true, latenciaMs: 12, nome }), 500));
+  if (MONITORAMENTO_SIMULADO) {
+    await esperar(atrasoMs);
+    return { ok: true, nome: id, ...respostaSimulada };
   }
-  // return api.post(`/dispositivos/${id}/ping`).then((res) => res.data);
+  return apiFetch(`/dispositivos/estacoes/${encodeURIComponent(id)}/${acao}`, { method: 'POST' });
 }
 
-export function sincronizarFacial(nomeDispositivo) {
-  const nome = normalizarIdentificador(nomeDispositivo, 'nomeDispositivo');
-
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve({ ok: true, nome }), 700));
-  }
-  // return api.post(`/dispositivos/${id}/sincronizar-facial`).then((res) => res.data);
+export function enviarPing(idDispositivo) {
+  return acaoNoDispositivo(idDispositivo, 'ping', { latenciaMs: 12 }, 500);
 }
 
-export function testarGiro(nomeDispositivo) {
-  const nome = normalizarIdentificador(nomeDispositivo, 'nomeDispositivo');
-
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve({ ok: true, nome }), 500));
-  }
-  // return api.post(`/dispositivos/${id}/testar-giro`).then((res) => res.data);
+export function sincronizarFacial(idDispositivo) {
+  return acaoNoDispositivo(idDispositivo, 'sincronizar-facial', {}, 700);
 }
 
-export function reiniciarDispositivo(nomeDispositivo) {
-  const nome = normalizarIdentificador(nomeDispositivo, 'nomeDispositivo');
-
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve({ ok: true, nome }), 800));
-  }
-  // return api.post(`/dispositivos/${id}/reiniciar`).then((res) => res.data);
+export function testarGiro(idDispositivo) {
+  return acaoNoDispositivo(idDispositivo, 'testar-giro', {}, 500);
 }
 
-export function bloqueioGeral() {
-  if (USE_MOCK) {
-    return new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 600));
+export function reiniciarDispositivo(idDispositivo) {
+  return acaoNoDispositivo(idDispositivo, 'reiniciar', {}, 800);
+}
+
+export async function bloqueioGeral() {
+  if (MONITORAMENTO_SIMULADO) {
+    await esperar(600);
+    return { ok: true };
   }
-  // return api.post('/dispositivos/bloqueio-geral').then((res) => res.data);
+  return apiFetch('/dispositivos/bloqueio-geral', { method: 'POST' });
 }

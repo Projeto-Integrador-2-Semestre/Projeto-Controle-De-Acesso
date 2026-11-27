@@ -1,43 +1,45 @@
-// Enquanto a API Java não está pronta, o login valida contra um usuário fixo de teste.
-// Quando a API estiver disponível, troque o conteúdo desta função por uma chamada
-// real (ex: usando o `api.js` com axios) — o restante do app não muda,
-// porque tudo aqui chama sempre `login(usuario, senha)`.
+import { apiFetch, USE_MOCK } from './api.js';
+import { limparSessao, nomeSalvo, salvarSessao, tokenAtual } from './sessao.js';
 
+// Usuário do modo simulado (só em desenvolvimento, sem API). Com a API, quem confere é o
+// POST /auth/login, com o usuário e a senha definidos nas variáveis ADMIN_* da API.
 const USUARIO_TESTE = {
   usuario: 'admin',
   senha: '1234',
   nome: 'Marcos Vinicius Silva',
 };
 
-export function login(usuario, senha) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (usuario === USUARIO_TESTE.usuario && senha === USUARIO_TESTE.senha) {
-        const tokenFake = 'mock-token-' + Date.now();
-        localStorage.setItem('token', tokenFake);
-        localStorage.setItem('usuarioNome', USUARIO_TESTE.nome);
-        resolve({ token: tokenFake, nome: USUARIO_TESTE.nome });
-      } else {
-        reject(new Error('Usuário ou senha inválidos.'));
-      }
-    }, 500); // simula o tempo de resposta de uma API real
+/** Faz login e guarda o token. `lembrar` mantém a sessão depois de fechar o navegador. */
+export async function login(usuario, senha, lembrar = false) {
+  if (USE_MOCK) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (usuario !== USUARIO_TESTE.usuario || senha !== USUARIO_TESTE.senha) {
+      throw new Error('Usuário ou senha inválidos.');
+    }
+    const sessao = { token: 'mock-token-' + Date.now(), nome: USUARIO_TESTE.nome };
+    salvarSessao(sessao, lembrar);
+    return sessao;
+  }
+
+  // autenticado: false -> um 401 aqui é "senha errada", não "sessão expirada"
+  const resposta = await apiFetch('/auth/login', {
+    method: 'POST',
+    body: { usuario, senha },
+    autenticado: false,
   });
+  salvarSessao({ token: resposta.token, nome: resposta.nome, expiraEm: resposta.expiraEm }, lembrar);
+  return resposta;
 }
 
 export function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuarioNome');
+  limparSessao();
 }
 
 /** Nome do operador logado (enviado junto com as liberações manuais de catraca). */
 export function nomeDoUsuario() {
-  try {
-    return localStorage.getItem('usuarioNome') || 'Operador';
-  } catch {
-    return 'Operador';
-  }
+  return nomeSalvo() || 'Operador';
 }
 
 export function estaAutenticado() {
-  return Boolean(localStorage.getItem('token'));
+  return Boolean(tokenAtual());
 }

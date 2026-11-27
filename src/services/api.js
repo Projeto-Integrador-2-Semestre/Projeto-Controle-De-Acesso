@@ -1,14 +1,33 @@
+import { limparSessao, tokenAtual } from './sessao.js';
+
 const urlConfigurada = String(import.meta.env.VITE_API_URL ?? '').trim();
 
 // URL base da API Java (Spring Boot). Só vale se for um endereço http(s) de verdade.
 export const API_URL = /^https?:\/\//i.test(urlConfigurada) ? urlConfigurada.replace(/\/+$/, '') : '';
 
-// Usa os dados simulados quando VITE_USE_MOCK=true ou quando não há VITE_API_URL configurada.
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || !API_URL;
+/**
+ * Modo simulado (dados de exemplo, sem API). Só existe para desenvolver a interface offline:
+ * vale com VITE_USE_MOCK=true, ou em `npm run dev` quando não há VITE_API_URL.
+ * No build de produção sem VITE_API_URL as telas mostram erro, em vez de dados falsos.
+ * Os mocks ficam em services/mocks e são carregados sob demanda (import dinâmico).
+ */
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || (import.meta.env.DEV && !API_URL);
 
 const TEMPO_LIMITE_MS = 20000;
 
-export async function apiFetch(caminho, { params, ...opcoes } = {}) {
+/** Chamado quando a API responde 401 (token vencido ou inválido). O App registra o redirecionamento. */
+let aoExpirarSessao = () => {};
+export function definirAoExpirarSessao(callback) {
+  aoExpirarSessao = callback;
+}
+
+export async function apiFetch(caminho, { params, autenticado = true, ...opcoes } = {}) {
+  if (!API_URL) {
+    const erroConfig = new Error('A URL da API não está configurada (VITE_API_URL).');
+    erroConfig.code = 'ERR_CONFIG';
+    throw erroConfig;
+  }
+
   const url = new URL(`${API_URL}${caminho}`);
   Object.entries(params ?? {}).forEach(([chave, valor]) => {
     if (valor !== undefined && valor !== null) url.searchParams.set(chave, valor);
@@ -24,6 +43,9 @@ export async function apiFetch(caminho, { params, ...opcoes } = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
+  const token = autenticado ? tokenAtual() : null;
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
   try {
     const resposta = await fetch(url, {
       ...opcoes,
@@ -34,13 +56,18 @@ export async function apiFetch(caminho, { params, ...opcoes } = {}) {
     const texto = resposta.status === 204 ? null : await resposta.text();
     let dados = texto;
 
-    if (texto && resposta.headers.get('content-type')?.includes('application/json')) {
+    // application/json e também application/problem+json
+    if (texto && /(^|\+|\/)json\b/i.test(resposta.headers.get('content-type') ?? '')) {
       dados = JSON.parse(texto);
     }
 
     if (!resposta.ok) {
       const erro = new Error(`A API respondeu com o status ${resposta.status}.`);
       erro.response = { data: dados, status: resposta.status };
+      if (resposta.status === 401 && autenticado) {
+        limparSessao();
+        aoExpirarSessao();
+      }
       throw erro;
     }
 
@@ -62,11 +89,22 @@ export async function apiFetch(caminho, { params, ...opcoes } = {}) {
   }
 }
 
+/** Mensagens para quando a API não manda "detail" (ou manda algo genérico demais). */
+const MENSAGENS_POR_STATUS = {
+  401: 'Sua sessão expirou. Faça login novamente.',
+  403: 'Você não tem permissão para esta ação.',
+  409: 'Já existe uma pessoa cadastrada com este CPF.',
+  413: 'A foto é grande demais. Envie uma imagem menor.',
+  503: 'O banco de dados está indisponível no momento. Tente novamente em instantes.',
+};
+
 /** Extrai a mensagem de erro enviada pela API ({"detail": "..."}) ou devolve a mensagem padrão. */
 export function mensagemDeErro(error, padrao) {
   const dados = error?.response?.data;
   if (dados && typeof dados === 'object' && dados.detail) return dados.detail;
-  if (typeof dados === 'string' && dados.trim() && dados.length < 200) return dados;
+  if (typeof dados === 'string' && dados.trim() && dados.length < 200 && !dados.trim().startsWith('<')) return dados;
+  const porStatus = MENSAGENS_POR_STATUS[error?.response?.status];
+  if (porStatus) return porStatus;
   if (error?.code === 'ERR_NETWORK') return 'Não foi possível conectar à API. Verifique se ela está no ar.';
   if (error?.code === 'ECONNABORTED') return 'A API demorou para responder. Tente novamente.';
   return error?.message && !error.response ? error.message : padrao;

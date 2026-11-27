@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { login } from '../../services/authService';
+import { mensagemDeErro } from '../../services/api.js';
 import './Login.css';
 import logoSenai from '../../assets/logo_senai.png';
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [usuario, setUsuario] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [lembrar, setLembrar] = useState(false);
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState(
+    location.state?.expirada ? 'Sua sessão expirou. Faça login novamente.' : ''
+  );
   const [carregando, setCarregando] = useState(false);
 
   async function handleSubmit(e) {
@@ -21,10 +25,11 @@ function Login() {
     setCarregando(true);
 
     try {
-      await login(usuario, senha);
-      navigate('/gestao');
+      await login(usuario, senha, lembrar);
+      // Volta para a tela que a pessoa tentou abrir antes do login
+      navigate(location.state?.de || '/gestao', { replace: true });
     } catch (err) {
-      setErro(err.message);
+      setErro(mensagemDeErro(err, 'Não foi possível entrar. Tente novamente.'));
     } finally {
       setCarregando(false);
     }

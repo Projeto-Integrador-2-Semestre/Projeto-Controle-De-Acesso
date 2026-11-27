@@ -21,7 +21,6 @@ import {
     atualizarPessoa,
     excluirPessoa,
     alterarStatusAcesso,
-    RECURSOS_PESSOAS,
 } from '../../services/PessoasService.js';
 import { mensagemDeErro } from '../../services/api.js';
 import './GestaoPessoas.css';
@@ -59,6 +58,9 @@ function GestaoPessoas() {
     const [erroAcao, setErroAcao] = useState('');
     const [salvando, setSalvando] = useState(false);
     const [excluindo, setExcluindo] = useState(false);
+    const [pessoaParaBloquear, setPessoaParaBloquear] = useState(null);
+    const [motivoBloqueio, setMotivoBloqueio] = useState('');
+    const [alterandoStatus, setAlterandoStatus] = useState(false);
 
     useEffect(() => {
         getPessoas()
@@ -98,14 +100,37 @@ function GestaoPessoas() {
         setPagina(1);
     }
 
-    async function alternarBloqueio(pessoa) {
-        const novoStatus = pessoa.status === 'liberado' ? 'bloqueado' : 'liberado';
-        try {
-            const atualizada = await alterarStatusAcesso(pessoa.id, novoStatus);
-            setPessoas((atual) => atual.map((p) => (p.id === atualizada.id ? atualizada : p)));
-        } catch (error) {
-            setErro(mensagemDeErro(error, 'Não foi possível alterar o acesso.'));
+    // Bloquear abre um modal para informar o motivo; liberar é direto.
+    function alternarBloqueio(pessoa) {
+        if (pessoa.status === 'liberado') {
+            setPessoaParaBloquear(pessoa);
+            setMotivoBloqueio('');
+            setErroAcao('');
+            return;
         }
+        mudarStatus(pessoa, 'liberado');
+    }
+
+    async function mudarStatus(pessoa, novoStatus, motivo) {
+        setAlterandoStatus(true);
+        setErroAcao('');
+        try {
+            const atualizada = await alterarStatusAcesso(pessoa.cpf, novoStatus, motivo);
+            setPessoas((atual) => atual.map((p) => (p.id === pessoa.id ? { ...p, ...atualizada, id: p.id } : p)));
+            setSincronizadoAs(formatarHoraAtual());
+            setPessoaParaBloquear(null);
+        } catch (error) {
+            const mensagem = mensagemDeErro(error, 'Não foi possível alterar o acesso.');
+            if (novoStatus === 'bloqueado') setErroAcao(mensagem);
+            else setErro(mensagem);
+        } finally {
+            setAlterandoStatus(false);
+        }
+    }
+
+    function confirmarBloqueio(event) {
+        event.preventDefault();
+        mudarStatus(pessoaParaBloquear, 'bloqueado', motivoBloqueio);
     }
 
     function abrirEdicao(pessoa) {
@@ -249,6 +274,64 @@ function GestaoPessoas() {
                             </button>
                             <button type="submit" className="modal__confirmar" disabled={salvando}>
                                 {salvando ? 'Salvando...' : 'Salvar alterações'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {pessoaParaBloquear && (
+                <div className="modal__overlay" onClick={() => !alterandoStatus && setPessoaParaBloquear(null)}>
+                    <form
+                        className="modal__container gestao__modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="gestao-bloquear-titulo"
+                        onClick={(event) => event.stopPropagation()}
+                        onSubmit={confirmarBloqueio}
+                    >
+                        <div className="modal__header">
+                            <div>
+                                <span className="modal__eyebrow">Controle de acesso</span>
+                                <h2 id="gestao-bloquear-titulo">Bloquear acesso</h2>
+                            </div>
+                            <button
+                                type="button"
+                                className="modal__fechar"
+                                onClick={() => setPessoaParaBloquear(null)}
+                                disabled={alterandoStatus}
+                                aria-label="Fechar bloqueio"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="modal__descricao">
+                            <strong>{pessoaParaBloquear.nome}</strong> (CPF {pessoaParaBloquear.cpf}) continuará sendo
+                            reconhecida pelo totem, mas a catraca não será liberada até o acesso ser desbloqueado.
+                        </p>
+                        <label className="modal__campo">
+                            <span>Motivo do bloqueio (opcional)</span>
+                            <input
+                                type="text"
+                                value={motivoBloqueio}
+                                onChange={(event) => setMotivoBloqueio(event.target.value)}
+                                maxLength={200}
+                                placeholder="Bloqueio administrativo"
+                                autoFocus
+                            />
+                        </label>
+                        {erroAcao && <p className="modal__erro" role="alert">{erroAcao}</p>}
+                        <div className="modal__acoes">
+                            <button
+                                type="button"
+                                className="modal__cancelar"
+                                onClick={() => setPessoaParaBloquear(null)}
+                                disabled={alterandoStatus}
+                            >
+                                Cancelar
+                            </button>
+                            <button type="submit" className="gestao__excluir-confirmar" disabled={alterandoStatus}>
+                                {alterandoStatus ? 'Bloqueando...' : 'Bloquear acesso'}
                             </button>
                         </div>
                     </form>
@@ -472,7 +555,7 @@ function GestaoPessoas() {
                                                 <div className="gestao__hora">às {p.horaCadastro}</div>
                                             </>
                                         ) : (
-                                            <div className="gestao__hora" title="A API ainda não guarda a data do cadastro">—</div>
+                                            <div className="gestao__hora" title="Cadastro feito antes de a data ser registrada">—</div>
                                         )}
                                     </td>
                                     <td>
@@ -488,12 +571,10 @@ function GestaoPessoas() {
                                             </button>
                                             <button
                                                 className={`icone-acao ${p.status === 'bloqueado' ? 'icone-acao--verde' : ''}`}
-                                                title={
-                                                    !RECURSOS_PESSOAS.bloqueio
-                                                        ? 'Bloqueio ainda não disponível na API'
-                                                        : p.status === 'liberado' ? 'Bloquear acesso' : 'Liberar acesso'
-                                                }
-                                                disabled={!RECURSOS_PESSOAS.bloqueio}
+                                                type="button"
+                                                title={p.status === 'liberado' ? 'Bloquear acesso' : 'Liberar acesso'}
+                                                aria-label={`${p.status === 'liberado' ? 'Bloquear' : 'Liberar'} acesso de ${p.nome}`}
+                                                disabled={alterandoStatus}
                                                 onClick={() => alternarBloqueio(p)}
                                             >
                                                 {p.status === 'liberado' ? <Lock size={16} /> : <Unlock size={16} />}

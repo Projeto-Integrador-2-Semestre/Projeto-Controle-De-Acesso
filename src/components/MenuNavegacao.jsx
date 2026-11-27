@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { getCatracas, getLiberacao, liberarCatraca } from '../services/CatracasService.js';
 import { mensagemDeErro } from '../services/api.js';
-import { nomeDoUsuario } from '../services/authService.js';
+import { logout, nomeDoUsuario } from '../services/authService.js';
 import './MenuNavegacao.css';
 import logoSenai from '../assets/logo_senai.png';
 
@@ -339,7 +339,7 @@ function MenuNavegacao({ children }) {
               <HelpCircle size={16} />
               Suporte Técnico SENAI
             </button>
-            <Link to="/" className="sidebar__sair">
+            <Link to="/" className="sidebar__sair" onClick={logout}>
               <LogOut size={16} />
               Encerrar Sessão
             </Link>
