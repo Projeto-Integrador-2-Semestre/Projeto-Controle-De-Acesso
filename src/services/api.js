@@ -1,4 +1,4 @@
-import { limparSessao, tokenAtual } from './sessao.js';
+import { expirarSessao, tokenAtual } from './sessao.js';
 
 const urlConfigurada = String(import.meta.env.VITE_API_URL ?? '').trim();
 
@@ -65,7 +65,7 @@ export async function apiFetch(caminho, { params, autenticado = true, ...opcoes 
       const erro = new Error(`A API respondeu com o status ${resposta.status}.`);
       erro.response = { data: dados, status: resposta.status };
       if (resposta.status === 401 && autenticado) {
-        limparSessao();
+        expirarSessao();
         aoExpirarSessao();
       }
       throw erro;

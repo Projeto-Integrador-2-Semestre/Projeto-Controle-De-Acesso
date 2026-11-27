@@ -5,6 +5,10 @@
 
 const CHAVES = ['token', 'usuarioNome', 'tokenExpiraEm'];
 
+// Marca que a sessão caiu por token vencido/inválido (resposta 401 da API). Fica guardada até a
+// tela de login exibir o aviso: assim ele aparece qualquer que seja o caminho até o login.
+const AVISO_EXPIRADA = 'sessaoExpirada';
+
 function armazenamentos() {
   const lista = [];
   try { lista.push(window.sessionStorage); } catch { /* bloqueado pelo navegador */ }
@@ -22,6 +26,7 @@ function ler(chave) {
 
 export function salvarSessao({ token, nome, expiraEm }, lembrar) {
   limparSessao();
+  limparAvisoSessaoExpirada();
   let destino;
   try {
     destino = lembrar ? window.localStorage : window.sessionStorage;
@@ -53,4 +58,31 @@ export function tokenAtual() {
 
 export function nomeSalvo() {
   return ler('usuarioNome');
+}
+
+/** Chamado quando a API responde 401: encerra a sessão e deixa o aviso para a tela de login. */
+export function expirarSessao() {
+  limparSessao();
+  try {
+    window.sessionStorage.setItem(AVISO_EXPIRADA, '1');
+  } catch {
+    /* sem armazenamento: o login só não mostra o aviso */
+  }
+}
+
+/** true se a última sessão caiu por token vencido (não apaga o aviso). */
+export function sessaoExpirou() {
+  try {
+    return window.sessionStorage.getItem(AVISO_EXPIRADA) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function limparAvisoSessaoExpirada() {
+  try {
+    window.sessionStorage.removeItem(AVISO_EXPIRADA);
+  } catch {
+    /* nada a limpar */
+  }
 }
